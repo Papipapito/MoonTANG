@@ -1,0 +1,58 @@
+// ============================================================================
+// moontang.cst — pines de MoonTANG en Tang Nano 20K (GW2AR-LV18QN88C8/I7)
+//
+// Basado en el cartucho V9968 de hra1129 (mismo carrier tipo WonderTANG: TN20K
+// + transceptores de nivel al slot MSX). La SDRAM embebida NO se lista: sus
+// pines son IMPLÍCITOS en la GW2AR-18 (el V9968 compila igual sin declararlos).
+//
+// >>> EXPERIMENTAL: VERIFICAR contra el esquemático real del WonderTANG antes de
+//     grabar. El mapeo de audio/flash es una elección de partida. <<<
+// ============================================================================
+
+// ---- relojes ----
+IO_LOC  "clk"    4;   IO_PORT "clk"    IO_TYPE=LVTTL33 PULL_MODE=UP;   // 27 MHz onboard
+IO_LOC  "clk14m" 80;  IO_PORT "clk14m" IO_TYPE=LVTTL33 PULL_MODE=UP;   // 14.318 MHz del bus
+
+// ---- bus del slot MSX (I/O) ----
+IO_LOC  "slot_reset_n" 86; IO_PORT "slot_reset_n" IO_TYPE=LVTTL33 PULL_MODE=UP;
+IO_LOC  "slot_iorq_n"  18; IO_PORT "slot_iorq_n"  IO_TYPE=LVTTL33 PULL_MODE=UP;
+IO_LOC  "slot_rd_n"    15; IO_PORT "slot_rd_n"    IO_TYPE=LVTTL33 PULL_MODE=UP;
+IO_LOC  "slot_wr_n"    16; IO_PORT "slot_wr_n"    IO_TYPE=LVTTL33 PULL_MODE=UP;
+
+IO_LOC  "slot_a[7]" 17; IO_PORT "slot_a[7]" IO_TYPE=LVTTL33 PULL_MODE=UP;
+IO_LOC  "slot_a[6]" 49; IO_PORT "slot_a[6]" IO_TYPE=LVTTL33 PULL_MODE=UP;
+IO_LOC  "slot_a[5]" 48; IO_PORT "slot_a[5]" IO_TYPE=LVTTL33 PULL_MODE=UP;
+IO_LOC  "slot_a[4]" 41; IO_PORT "slot_a[4]" IO_TYPE=LVTTL33 PULL_MODE=UP;
+IO_LOC  "slot_a[3]" 42; IO_PORT "slot_a[3]" IO_TYPE=LVTTL33 PULL_MODE=UP;
+IO_LOC  "slot_a[2]" 76; IO_PORT "slot_a[2]" IO_TYPE=LVTTL33 PULL_MODE=UP;
+IO_LOC  "slot_a[1]" 31; IO_PORT "slot_a[1]" IO_TYPE=LVTTL33 PULL_MODE=UP;
+IO_LOC  "slot_a[0]" 30; IO_PORT "slot_a[0]" IO_TYPE=LVTTL33 PULL_MODE=UP;
+
+IO_LOC  "slot_d[7]" 73; IO_PORT "slot_d[7]" IO_TYPE=LVTTL33 PULL_MODE=UP DRIVE=8;
+IO_LOC  "slot_d[6]" 74; IO_PORT "slot_d[6]" IO_TYPE=LVTTL33 PULL_MODE=UP DRIVE=8;
+IO_LOC  "slot_d[5]" 75; IO_PORT "slot_d[5]" IO_TYPE=LVTTL33 PULL_MODE=UP DRIVE=8;
+IO_LOC  "slot_d[4]" 85; IO_PORT "slot_d[4]" IO_TYPE=LVTTL33 PULL_MODE=UP DRIVE=8;
+IO_LOC  "slot_d[3]" 77; IO_PORT "slot_d[3]" IO_TYPE=LVTTL33 PULL_MODE=UP DRIVE=8;
+IO_LOC  "slot_d[2]" 27; IO_PORT "slot_d[2]" IO_TYPE=LVTTL33 PULL_MODE=UP DRIVE=8;
+IO_LOC  "slot_d[1]" 28; IO_PORT "slot_d[1]" IO_TYPE=LVTTL33 PULL_MODE=UP DRIVE=8;
+IO_LOC  "slot_d[0]" 29; IO_PORT "slot_d[0]" IO_TYPE=LVTTL33 PULL_MODE=UP DRIVE=8;
+
+IO_LOC  "slot_wait"     72; IO_PORT "slot_wait"     IO_TYPE=LVTTL33 PULL_MODE=UP DRIVE=8;
+IO_LOC  "slot_intr"     71; IO_PORT "slot_intr"     IO_TYPE=LVTTL33 PULL_MODE=DOWN DRIVE=8;
+IO_LOC  "slot_data_dir" 19; IO_PORT "slot_data_dir" IO_TYPE=LVTTL33 PULL_MODE=UP DRIVE=8;
+IO_LOC  "oe_n"          20; IO_PORT "oe_n"          IO_TYPE=LVTTL33 PULL_MODE=UP DRIVE=8;
+
+// ---- audio (sigma-delta -> filtro RC -> jack / pin SOUND). Pines de partida ----
+IO_LOC  "audio_l" 52; IO_PORT "audio_l" IO_TYPE=LVTTL33 PULL_MODE=NONE DRIVE=8;
+IO_LOC  "audio_r" 53; IO_PORT "audio_r" IO_TYPE=LVTTL33 PULL_MODE=NONE DRIVE=8;
+
+// ---- flash SPI onboard (YRW801) — pines MSPI de la TN20K ----
+IO_LOC  "flash_cs"   60; IO_PORT "flash_cs"   IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
+IO_LOC  "flash_sclk" 59; IO_PORT "flash_sclk" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
+IO_LOC  "flash_miso" 62; IO_PORT "flash_miso" IO_TYPE=LVCMOS33 PULL_MODE=UP;
+IO_LOC  "flash_mosi" 61; IO_PORT "flash_mosi" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
+
+// ---- diagnóstico ----
+IO_LOC  "ws2812_led" 79; IO_PORT "ws2812_led" IO_TYPE=LVTTL33 PULL_MODE=UP DRIVE=8;
+IO_LOC  "button[0]"  88; IO_PORT "button[0]"  IO_TYPE=LVTTL33 PULL_MODE=DOWN;
+IO_LOC  "button[1]"  87; IO_PORT "button[1]"  IO_TYPE=LVTTL33 PULL_MODE=DOWN;

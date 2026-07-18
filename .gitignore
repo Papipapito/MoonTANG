@@ -1,0 +1,22 @@
+# Gowin build artifacts
+fpga/impl/
+fpga/*.log
+fpga/build_*.log
+fpga/gw_est*.log
+
+# per-build delivery copies (kept locally, not in git)
+fpga/files/
+
+# scratch / estimation harness (local only)
+fpga/opl4_20k_est/
+
+# the YRW801 wave ROM is copyright and user-supplied — never commit
+*.yrw801
+yrw801*.bin
+*.YRW801
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.bak
+*~
