@@ -127,8 +127,8 @@ thanks to all of them — see [`CREDITS.md`](CREDITS.md) for the full inventory 
 - **Jokin Miragaia** (`antxiko`) — the **mangOPL4** fork whose Gowin fixes and
   MoonSound cartridge wrapper we adapted.
 - **srg320** — the **YMF278B** PCM/wavetable engine (from Arcade‑PsikyoSH2_MiSTer),
-  the first open RTL of the OPL4 wavetable, reused **with the author's kind
-  permission**; itself derived from **MAME**'s `ymf278b.cpp` by **R. Belmont,
+  the first open RTL of the OPL4 wavetable, **licensed BSD‑3‑Clause** by the
+  author; itself derived from **MAME**'s `ymf278b.cpp` by **R. Belmont,
   Olivier Galibert & hap** (BSD‑3‑Clause).
 - **Takayuki Hara** (`t.hara` / hra1129 / HRA!) — the
   [V9968 Cartridge](https://github.com/hra1129) reference: the MSX slot interface,

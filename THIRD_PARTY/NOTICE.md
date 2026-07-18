@@ -21,18 +21,18 @@ LGPL‑3.0 text: <https://www.gnu.org/licenses/lgpl-3.0.txt>.
 `fpga/opl3/afifo.v` © **Dan Gisselquist, Ph.D.**, Gisselquist Technology, LLC.
 Licensed GPL‑3.0 (see `../LICENSE`).
 
-## 3. YMF278B PCM/wavetable engine — BSD‑3‑Clause + author permission
+## 3. YMF278B PCM/wavetable engine — BSD‑3‑Clause
 
 `fpga/opl4wave/ymf278b_gowin.v` (generated from srg320's `YMF278B.sv`).
 
-- Origin: **srg320**, *Arcade‑PsikyoSH2_MiSTer* (`rtl/PSH2/YMF278B.sv`). srg320's
-  upstream repository carries no LICENSE file, so the author's **explicit e‑mail
-  permission of 2026‑07‑13 — "You can use the code in any form"** — is the basis
-  for reuse and is recorded here and in the file header. (The original e‑mail is
-  archived by the maintainer.)
+- Origin: **srg320**, *Arcade‑PsikyoSH2_MiSTer* (`rtl/PSH2/YMF278B.sv`). srg320
+  **licensed the file BSD‑3‑Clause** — the current upstream source header (commit
+  `5379b34b`, 2026‑07‑14) reads:
+  `//license:BSD-3-Clause (PCM engine derived from MAME's ymf278b)`. This
+  supersedes the earlier e‑mail permission (2026‑07‑13); the file is now covered
+  by a formal open‑source license.
 - The engine derives from **MAME**'s `ymf278b.cpp`, which is **BSD‑3‑Clause**,
-  copyright holders **R. Belmont, Olivier Galibert, hap**. That BSD‑3 license is
-  preserved, as agreed with srg320:
+  copyright holders **R. Belmont, Olivier Galibert, hap**. The BSD‑3 text:
 
 ```
 Copyright the MAME team (R. Belmont, Olivier Galibert, hap) and contributors.
@@ -55,8 +55,8 @@ OUT OF THE USE OF THIS SOFTWARE.
 ```
 
 > **Note for redistributors:** if you fork MoonTANG, keep this notice and the
-> file header. If srg320 later adds a formal LICENSE to the upstream repo, this
-> section should be updated to point at it.
+> BSD‑3‑Clause header. Upstream: <https://github.com/srg320/Arcade-PsikyoSH2_MiSTer>
+> (`rtl/PSH2/YMF278B.sv`).
 
 ## 4. MSX slot interface & SDRAM controller — © Takayuki Hara (non‑commercial)
 

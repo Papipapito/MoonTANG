@@ -9,7 +9,7 @@ license. Per‑file headers are authoritative; keep them intact.
 | **OPL3 FM core** | `fpga/opl3/*.sv` | **Greg Taylor** (`gtaylormb`, *OPL3 FPGA*); algorithm origins **R. Cozendey**, **S. Ohrendorf**, **Nuke.YKT**, carbon14/"opl3" | LGPL‑3.0‑or‑later |
 | OPL3 package (clock retune) | `fpga/opl3/opl3_pkg.sv` | Greg Taylor; mods **Jokin Miragaia** (`antxiko`, *mangOPL4*) | LGPL‑3.0 |
 | Async FIFO (FM host_if) | `fpga/opl3/afifo.v` | **Dan Gisselquist** (Gisselquist Technology) | GPL‑3.0 |
-| **PCM / wavetable engine** | `fpga/opl4wave/ymf278b_gowin.v` | **srg320** (*Arcade‑PsikyoSH2_MiSTer*), from **MAME** `ymf278b.cpp` (**R. Belmont, O. Galibert, hap**) | BSD‑3‑Clause + author's e‑mail permission (see `THIRD_PARTY/NOTICE.md`) |
+| **PCM / wavetable engine** | `fpga/opl4wave/ymf278b_gowin.v` | **srg320** (*Arcade‑PsikyoSH2_MiSTer*), from **MAME** `ymf278b.cpp` (**R. Belmont, O. Galibert, hap**) | BSD‑3‑Clause (srg320 upstream header, see `THIRD_PARTY/NOTICE.md`) |
 | FM cartridge wrapper | `fpga/src/opl4fm.v` | **Papipapito** (Albert, with Claude); adapts mangOPL4's `cartridge_opl3.sv` | GPL‑3.0 |
 | PCM glue | `fpga/src/opl4_pcm.v` | Papipapito (Albert, with Claude) | GPL‑3.0 |
 | Wave‑in‑SDRAM arbiter | `fpga/src/wave_sdram.v` | Papipapito (Albert, with Claude) | GPL‑3.0 |
@@ -41,6 +41,6 @@ credited as co‑author in the commit history (`Co-Authored-By` trailers).
 Because `afifo.v` (GPL‑3.0) is linked with the LGPL‑3.0 OPL3 core, the combined
 gateware is **GPL‑3.0**. The t.hara carrier/SDRAM files carry a **non‑commercial**
 clause — MoonTANG is a hobby, non‑commercial release; do not sell the combined
-work. The **YRW801** GM sample ROM is **not distributed** (copyright); it is
-user‑supplied. See [`THIRD_PARTY/NOTICE.md`](THIRD_PARTY/NOTICE.md) for the
-upstream notices and the srg320 permission record.
+work. srg320's YMF278B engine is **BSD‑3‑Clause** (upstream header). The
+**YRW801** GM sample ROM is **not distributed** (copyright); it is user‑supplied.
+See [`THIRD_PARTY/NOTICE.md`](THIRD_PARTY/NOTICE.md) for the upstream notices.
