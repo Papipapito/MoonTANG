@@ -67,7 +67,29 @@ without prior written permission**. Honor that clause. (t.hara's repository root
 carries an MIT license; the stricter per‑file non‑commercial header is honored
 here to be safe.)
 
-## 5. Gowin rPLL IP
+## 5. MSX slot bus front‑end and I2S — BSD‑3‑Clause
+
+`fpga/wondertang/bus.sv` and `fpga/wondertang/wt_bus.sv` © **Shinobu Hashimoto**
+(2024), from [tnCart](https://github.com/buppu3/tnCart), via **Albert Herranz**'s
+WonderTANG port [tnCartWonder](https://github.com/herraa1/tnCartWonder).
+`fpga/wondertang/i2s_audio_tx.sv` © **Albert Herranz** (2024). Both BSD‑3‑Clause;
+the full licence text is reproduced in each file header — keep it.
+
+MoonTANG modifications to `wt_bus.sv` (originally `board_rev1_bus.sv`): the module
+was renamed `WT200B_BUS` and two dependencies on tnCart's `CONFIG`/`BOARD_ID`
+packages were removed by fixing the board to WonderTANG 2.00b — the `/INT`
+inversion takes the non‑101c branch, and the 21.6 MHz clock‑enable tap is fixed to
+`delay_clk[0]` (the non‑IKASCC branch; MoonTANG has no SCC). Both changes are
+marked in the file.
+
+## 6. WonderTANG pinout — BSD‑2‑Clause
+
+`fpga/constraints/moontang.cst` is derived from `fpga/src/top.cst` of
+[lfantoniosi/WonderTANG](https://github.com/lfantoniosi/WonderTANG) (BSD‑2), which
+is authoritative for the 2.0b board, cross‑checked against `board_wt200b.cst` from
+tnCartWonder.
+
+## 7. Gowin rPLL IP
 
 `fpga/clocks/pll_main.v`, `pll_eng.v` adapt Gowin Semiconductor's rPLL primitive
 wrappers (vendor IP, conventionally redistributed in Tang Nano projects).

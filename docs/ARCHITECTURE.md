@@ -1,3 +1,12 @@
+> ⚠️ **SUPERSEDED IN PART (2026‑08‑05).** This document was written for the first
+> attempt, which targeted hra1129's V9968 carrier with a *flat, non‑multiplexed*
+> slot bus and a 1‑bit sigma‑delta DAC. MoonTANG now targets the **WonderTANG
+> 2.0b**, whose bus is **multiplexed** (`mp[7:0]` + `msel_n[2:0]`) and whose audio
+> goes out through an **I2S DAC**. Sections 1, 5, 6 and 7 still describe the wave
+> memory path, the loader and the mixer accurately; sections 2, 4 and 9 (block
+> diagram, bus interface, open questions) are superseded by `README.md` and
+> `BRINGUP_PLAN.md`. Kept for the reasoning it records.
+
 # MoonTANG — Technical Architecture
 
 **MoonSound (OPL4 / YMF278B) MSX cartridge on a Tang Nano 20K (Gowin GW2AR-18C).**

@@ -1,58 +1,123 @@
 // ============================================================================
-// moontang.cst — pines de MoonTANG en Tang Nano 20K (GW2AR-LV18QN88C8/I7)
+//  moontang.cst — MoonTANG sobre cartucho WonderTANG 2.00b
+//                 Tang Nano 20K · GW2AR-LV18QN88C8/I7
+// ----------------------------------------------------------------------------
+//  Pinout COPIADO del top.cst oficial de lfantoniosi/WonderTANG (BSD-2), que es
+//  el que corresponde a la placa 2.0b, con los nombres de señal de tnCart
+//  (board_wt200b.cst de herraa1/tnCartWonder) porque el front-end de bus
+//  vendorizado (WT200B_BUS) usa esa nomenclatura.
 //
-// Basado en el cartucho V9968 de hra1129 (mismo carrier tipo WonderTANG: TN20K
-// + transceptores de nivel al slot MSX). La SDRAM embebida NO se lista: sus
-// pines son IMPLÍCITOS en la GW2AR-18 (el V9968 compila igual sin declararlos).
+//  OJO: el netlist kicad del repo de WonderTANG esta OBSOLETO (habla de
+//  Tang_Nano_9k y de un bus de direcciones SIN multiplexar). Las fuentes
+//  buenas son top.cst y WonrderTANG.kicad_sch.
 //
-// >>> EXPERIMENTAL: VERIFICAR contra el esquemático real del WonderTANG antes de
-//     grabar. El mapeo de audio/flash es una elección de partida. <<<
+//  La SDRAM embebida NO se lista: sus pines son IMPLICITOS en la GW2AR-18.
+//
+//  Correspondencia con los nombres del repo oficial:
+//    CART_DATA_SIG[7:0] = cd[7:0]      CART_MUX_SIG[7:0] = mp[7:0]
+//    CART_MUX_CS_n[2:0] = msel_n[2:0]  CART_DATA_DIR     = datadir
+//    DAC_DIN = hp_din   DAC_BCLK = hp_bck   DAC_LRCLK = hp_ws
+//    DAC_SDMODE_n = pa_en (habilitacion del amplificador)
 // ============================================================================
 
-// ---- relojes ----
-IO_LOC  "clk"    4;   IO_PORT "clk"    IO_TYPE=LVTTL33 PULL_MODE=UP;   // 27 MHz onboard
-IO_LOC  "clk14m" 80;  IO_PORT "clk14m" IO_TYPE=LVTTL33 PULL_MODE=UP;   // 14.318 MHz del bus
+// ---- reloj de la placa ----
+IO_LOC  "CLK_27M" 4;
+IO_PORT "CLK_27M" IO_TYPE=LVCMOS33 PULL_MODE=NONE BANK_VCCIO=3.3;
 
-// ---- bus del slot MSX (I/O) ----
-IO_LOC  "slot_reset_n" 86; IO_PORT "slot_reset_n" IO_TYPE=LVTTL33 PULL_MODE=UP;
-IO_LOC  "slot_iorq_n"  18; IO_PORT "slot_iorq_n"  IO_TYPE=LVTTL33 PULL_MODE=UP;
-IO_LOC  "slot_rd_n"    15; IO_PORT "slot_rd_n"    IO_TYPE=LVTTL33 PULL_MODE=UP;
-IO_LOC  "slot_wr_n"    16; IO_PORT "slot_wr_n"    IO_TYPE=LVTTL33 PULL_MODE=UP;
+// ---- bus de datos del slot (74LVC245 dedicado) ----
+IO_LOC  "CART_DATA_SIG[7]" 49;
+IO_PORT "CART_DATA_SIG[7]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
+IO_LOC  "CART_DATA_SIG[6]" 53;
+IO_PORT "CART_DATA_SIG[6]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
+IO_LOC  "CART_DATA_SIG[5]" 71;
+IO_PORT "CART_DATA_SIG[5]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
+IO_LOC  "CART_DATA_SIG[4]" 72;
+IO_PORT "CART_DATA_SIG[4]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
+IO_LOC  "CART_DATA_SIG[3]" 79;
+IO_PORT "CART_DATA_SIG[3]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
+IO_LOC  "CART_DATA_SIG[2]" 86;
+IO_PORT "CART_DATA_SIG[2]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
+IO_LOC  "CART_DATA_SIG[1]" 41;
+IO_PORT "CART_DATA_SIG[1]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
+IO_LOC  "CART_DATA_SIG[0]" 48;
+IO_PORT "CART_DATA_SIG[0]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
 
-IO_LOC  "slot_a[7]" 17; IO_PORT "slot_a[7]" IO_TYPE=LVTTL33 PULL_MODE=UP;
-IO_LOC  "slot_a[6]" 49; IO_PORT "slot_a[6]" IO_TYPE=LVTTL33 PULL_MODE=UP;
-IO_LOC  "slot_a[5]" 48; IO_PORT "slot_a[5]" IO_TYPE=LVTTL33 PULL_MODE=UP;
-IO_LOC  "slot_a[4]" 41; IO_PORT "slot_a[4]" IO_TYPE=LVTTL33 PULL_MODE=UP;
-IO_LOC  "slot_a[3]" 42; IO_PORT "slot_a[3]" IO_TYPE=LVTTL33 PULL_MODE=UP;
-IO_LOC  "slot_a[2]" 76; IO_PORT "slot_a[2]" IO_TYPE=LVTTL33 PULL_MODE=UP;
-IO_LOC  "slot_a[1]" 31; IO_PORT "slot_a[1]" IO_TYPE=LVTTL33 PULL_MODE=UP;
-IO_LOC  "slot_a[0]" 30; IO_PORT "slot_a[0]" IO_TYPE=LVTTL33 PULL_MODE=UP;
+// ---- bus multiplexado: A0-A15 + control, por grupos ----
+IO_LOC  "CART_MUX_SIG[7]" 31;
+IO_PORT "CART_MUX_SIG[7]" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "CART_MUX_SIG[6]" 30;
+IO_PORT "CART_MUX_SIG[6]" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "CART_MUX_SIG[5]" 29;
+IO_PORT "CART_MUX_SIG[5]" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "CART_MUX_SIG[4]" 26;
+IO_PORT "CART_MUX_SIG[4]" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "CART_MUX_SIG[3]" 25;
+IO_PORT "CART_MUX_SIG[3]" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "CART_MUX_SIG[2]" 28;
+IO_PORT "CART_MUX_SIG[2]" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "CART_MUX_SIG[1]" 27;
+IO_PORT "CART_MUX_SIG[1]" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "CART_MUX_SIG[0]" 77;
+IO_PORT "CART_MUX_SIG[0]" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
 
-IO_LOC  "slot_d[7]" 73; IO_PORT "slot_d[7]" IO_TYPE=LVTTL33 PULL_MODE=UP DRIVE=8;
-IO_LOC  "slot_d[6]" 74; IO_PORT "slot_d[6]" IO_TYPE=LVTTL33 PULL_MODE=UP DRIVE=8;
-IO_LOC  "slot_d[5]" 75; IO_PORT "slot_d[5]" IO_TYPE=LVTTL33 PULL_MODE=UP DRIVE=8;
-IO_LOC  "slot_d[4]" 85; IO_PORT "slot_d[4]" IO_TYPE=LVTTL33 PULL_MODE=UP DRIVE=8;
-IO_LOC  "slot_d[3]" 77; IO_PORT "slot_d[3]" IO_TYPE=LVTTL33 PULL_MODE=UP DRIVE=8;
-IO_LOC  "slot_d[2]" 27; IO_PORT "slot_d[2]" IO_TYPE=LVTTL33 PULL_MODE=UP DRIVE=8;
-IO_LOC  "slot_d[1]" 28; IO_PORT "slot_d[1]" IO_TYPE=LVTTL33 PULL_MODE=UP DRIVE=8;
-IO_LOC  "slot_d[0]" 29; IO_PORT "slot_d[0]" IO_TYPE=LVTTL33 PULL_MODE=UP DRIVE=8;
+// ---- seleccion de grupo del multiplexor ----
+IO_LOC  "CART_MUX_CS_n[2]" 19;
+IO_PORT "CART_MUX_CS_n[2]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
+IO_LOC  "CART_MUX_CS_n[1]" 20;
+IO_PORT "CART_MUX_CS_n[1]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
+IO_LOC  "CART_MUX_CS_n[0]" 17;
+IO_PORT "CART_MUX_CS_n[0]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
 
-IO_LOC  "slot_wait"     72; IO_PORT "slot_wait"     IO_TYPE=LVTTL33 PULL_MODE=UP DRIVE=8;
-IO_LOC  "slot_intr"     71; IO_PORT "slot_intr"     IO_TYPE=LVTTL33 PULL_MODE=DOWN DRIVE=8;
-IO_LOC  "slot_data_dir" 19; IO_PORT "slot_data_dir" IO_TYPE=LVTTL33 PULL_MODE=UP DRIVE=8;
-IO_LOC  "oe_n"          20; IO_PORT "oe_n"          IO_TYPE=LVTTL33 PULL_MODE=UP DRIVE=8;
+// ---- direccion del transceptor de datos ----
+IO_LOC  "CART_DATA_DIR" 52;
+IO_PORT "CART_DATA_DIR" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
 
-// ---- audio (sigma-delta -> filtro RC -> jack / pin SOUND). Pines de partida ----
-IO_LOC  "audio_l" 52; IO_PORT "audio_l" IO_TYPE=LVTTL33 PULL_MODE=NONE DRIVE=8;
-IO_LOC  "audio_r" 53; IO_PORT "audio_r" IO_TYPE=LVTTL33 PULL_MODE=NONE DRIVE=8;
+// ---- control del slot ----
+// wait_n e int_n pasan por 2N3904 INVERSORES -> PULL_MODE=DOWN para que no se
+// autoafirmen durante la configuracion del FPGA. (La 2.0b no lleva pulldown en
+// las bases: defecto conocido; ver checklist de bring-up.)
+IO_LOC  "CART_WAIT_n" 42;
+IO_PORT "CART_WAIT_n" IO_TYPE=LVCMOS33 PULL_MODE=DOWN DRIVE=8 BANK_VCCIO=3.3;
+IO_LOC  "CART_INT_n" 73;
+IO_PORT "CART_INT_n" IO_TYPE=LVCMOS33 PULL_MODE=DOWN DRIVE=8 BANK_VCCIO=3.3;
+IO_LOC  "CART_BUSDIR_n" 74;
+IO_PORT "CART_BUSDIR_n" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
+IO_LOC  "CART_SLTSL_n" 18;
+IO_PORT "CART_SLTSL_n" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "CART_WR_n" 16;
+IO_PORT "CART_WR_n" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "CART_RD_n" 15;
+IO_PORT "CART_RD_n" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "CART_CLOCK" 76;
+IO_PORT "CART_CLOCK" IO_TYPE=LVCMOS33 PULL_MODE=NONE BANK_VCCIO=3.3;
 
-// ---- flash SPI onboard (YRW801) — pines MSPI de la TN20K ----
-IO_LOC  "flash_cs"   60; IO_PORT "flash_cs"   IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
-IO_LOC  "flash_sclk" 59; IO_PORT "flash_sclk" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
-IO_LOC  "flash_miso" 62; IO_PORT "flash_miso" IO_TYPE=LVCMOS33 PULL_MODE=UP;
-IO_LOC  "flash_mosi" 61; IO_PORT "flash_mosi" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8;
+// ---- DAC I2S de la placa (hp_* + amplificador) ----
+IO_LOC  "DAC_DIN" 54;
+IO_PORT "DAC_DIN" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
+IO_LOC  "DAC_BCLK" 56;
+IO_PORT "DAC_BCLK" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
+IO_LOC  "DAC_LRCLK" 55;
+IO_PORT "DAC_LRCLK" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
+IO_LOC  "DAC_SDMODE_n" 51;
+IO_PORT "DAC_SDMODE_n" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
 
-// ---- diagnóstico ----
-IO_LOC  "ws2812_led" 79; IO_PORT "ws2812_led" IO_TYPE=LVTTL33 PULL_MODE=UP DRIVE=8;
-IO_LOC  "button[0]"  88; IO_PORT "button[0]"  IO_TYPE=LVTTL33 PULL_MODE=DOWN;
-IO_LOC  "button[1]"  87; IO_PORT "button[1]"  IO_TYPE=LVTTL33 PULL_MODE=DOWN;
+// ---- flash SPI (imagen YRW801) ----
+IO_LOC  "mspi_sclk" 59;
+IO_PORT "mspi_sclk" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
+IO_LOC  "mspi_cs" 60;
+IO_PORT "mspi_cs" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
+IO_LOC  "mspi_mosi" 61;
+IO_PORT "mspi_mosi" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
+IO_LOC  "mspi_miso" 62;
+IO_PORT "mspi_miso" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "mspi_hold" 63;
+IO_PORT "mspi_hold" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
+
+// ---- LED de diagnostico ----
+IO_LOC  "LED" 75;
+IO_PORT "LED" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
+
+// ---- UART de telemetria (al BL616 USB-serie de la Tang Nano 20K) ----
+// Pines del propio TN20K, no del carrier (tomados de board_wt200b.cst).
+IO_LOC  "UART_TX" 69;
+IO_PORT "UART_TX" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;

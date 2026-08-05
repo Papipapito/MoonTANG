@@ -20,3 +20,9 @@ yrw801*.bin
 Thumbs.db
 *.bak
 *~
+
+# pruebas puntuales de toolchain
+fpga/test_1912/
+fpga/build_wt_*.log
+tools/sim/*.vcd
+ruvector.db

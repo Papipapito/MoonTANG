@@ -762,7 +762,7 @@ YMF278B u_engine (
 //  lvl_min es ventana-local, se rearma en cada trama)
 // ===========================================================================
 parameter DBG_FRAME_CYC = 32'd9375000;   // ~250ms a 37.5MHz (el TB lo acorta)
-parameter DBG_BAUD_DIV  = 9'd326;        // 37.5e6/115200 = 325.5
+parameter DBG_BAUD_DIV  = 9'd322;        // MoonTANG: clk_eng 37.125e6/115200 = 322.3
 
 reg [15:0] c_rep, c_drop, c_push, c_tick, c_miss, c_pf;
 reg [3:0]  lvl_min_w;
@@ -834,7 +834,7 @@ always @(posedge clk_eng or negedge erst_n) begin
             // motor. Yo (COM11) veo: alive avanza=motor vivo; vid[2:0]=frame_cnt
             // avanza entre tramas => el pipeline de video GENERA FRAMES;
             // vid[3]=pll27_lock. (Restaurar a {ifw_hits,alive} tras diagnostico.)
-            fr[15] <= {vid_s1, alive};     // el sum va aparte como byte 16
+            fr[15] <= {ifw_hits, alive};   // el sum va aparte como byte 16
             seq <= seq + 8'd1;
             fr_i <= 5'd0; bit_i <= 0; baud <= 0; sum <= 8'd0;
         end

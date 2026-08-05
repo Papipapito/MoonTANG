@@ -15,24 +15,29 @@ license. Per‑file headers are authoritative; keep them intact.
 | Wave‑in‑SDRAM arbiter | `fpga/src/wave_sdram.v` | Papipapito (Albert, with Claude) | GPL‑3.0 |
 | **SDRAM controller** | `fpga/src/ip_sdram_tangnano20k_c.v` | **Takayuki Hara** (`t.hara` / hra1129) — *V9968 Cartridge* | non‑commercial (per header) / MIT (repo root) |
 | Wave→SDRAM bridge | `fpga/src/wv_to_sdram.v` | Papipapito (Albert, with Claude) | GPL‑3.0 |
+| **MSX slot bus front‑end** (multiplexed) | `fpga/wondertang/bus.sv`, `fpga/wondertang/wt_bus.sv` | **Shinobu Hashimoto** (`buppu3`) — *tnCart*; port by **Albert Herranz** (`herraa1`) — *tnCartWonder* | BSD‑3‑Clause |
+| **I2S transmitter** | `fpga/wondertang/i2s_audio_tx.sv` | **Albert Herranz** (`herraa1`) | BSD‑3‑Clause |
+| **Board pinout (WonderTANG 2.0b)** | `fpga/constraints/moontang.cst` | derived from **lfantoniosi** *WonderTANG* `fpga/src/top.cst` + `board_wt200b.cst` (herraa1) | BSD‑2 / BSD‑3 |
 | SPI flash reader | `fpga/src/flash_rw.v` | Papipapito project | GPL‑3.0 |
 | YRW801 loader | `fpga/src/yrw801_loader.v` | Papipapito (Albert, with Claude) | GPL‑3.0 |
-| Sigma‑delta DAC | `fpga/src/sigma_delta_dac.v` | Papipapito (Albert, with Claude) | GPL‑3.0 |
-| Cartridge top | `fpga/src/moontang_top.v` | Papipapito (Albert, with Claude) | GPL‑3.0 |
+| Cartridge top | `fpga/src/moontang_top.sv` | Papipapito (Albert, with Claude) | GPL‑3.0 |
 | rPLL IP | `fpga/clocks/pll_main.v`, `pll_eng.v` | **Gowin Semiconductor** (tool IP, adapted) | vendor IP |
 
 ## Hardware / carrier
 
-- **luca / lfantoniosi** — the **WonderTANG** open cartridge (Tang Nano 20K in an
-  MSX slot) this targets.
-- **Takayuki Hara** (hra1129) — the **V9968 Cartridge** whose pinout, SDRAM
-  controller and slot interface this build is modelled on.
+- **luca / lfantoniosi** — the **WonderTANG 2.0b** cartridge this targets, and the
+  authoritative `top.cst` pinout (BSD‑2). Note its KiCad netlist is stale (it still
+  describes a Tang Nano 9K with a non‑multiplexed address bus) — `top.cst` and the
+  schematic are the sources of truth.
+- **Shinobu Hashimoto** (`buppu3`) and **Albert Herranz** (`herraa1`) — tnCart /
+  tnCartWonder, including the `wt200b` board definition for this exact revision.
+- **Takayuki Hara** (hra1129) — the `ip_sdram` controller from the V9968 Cartridge.
 - **Sipeed** — the Tang Nano 20K.
 
 ## Co‑authorship
 
 This standalone port — the cartridge top, clocking, the SDRAM bridge, the YRW801
-loader, the sigma‑delta DAC, the constraints and the bring‑up work — was done by
+loader, the audio mixer, the constraints and the testbenches — was done by
 **Albert (Papipapito)** in pair‑programming with **Claude (Anthropic)**, who is
 credited as co‑author in the commit history (`Co-Authored-By` trailers).
 

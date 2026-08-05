@@ -24,6 +24,7 @@ module pll_main (
 );
     wire clkoutd3_o;
     wire gw_gnd = 1'b0;
+    wire gw_vcc = 1'b1;   // FDLY: 0000 no es un codigo valido; se ata a vcc
 
     rPLL rpll_inst (
         .CLKOUT   (clk_108m),
@@ -40,7 +41,7 @@ module pll_main (
         .ODSEL    ({gw_gnd,gw_gnd,gw_gnd,gw_gnd,gw_gnd,gw_gnd}),
         .PSDA     ({gw_gnd,gw_gnd,gw_gnd,gw_gnd}),
         .DUTYDA   ({gw_gnd,gw_gnd,gw_gnd,gw_gnd}),
-        .FDLY     ({gw_gnd,gw_gnd,gw_gnd,gw_gnd})
+        .FDLY     ({gw_vcc,gw_vcc,gw_vcc,gw_vcc})
     );
 
     defparam rpll_inst.FCLKIN          = "27";
@@ -50,8 +51,14 @@ module pll_main (
     defparam rpll_inst.FBDIV_SEL       = 3;      // x4  -> 108 MHz
     defparam rpll_inst.DYN_ODIV_SEL    = "false";
     defparam rpll_inst.ODIV_SEL        = 8;      // VCO 864 MHz
-    defparam rpll_inst.PSDA_SEL        = "1000"; // ~180 deg (afinar en HW)
-    defparam rpll_inst.DYN_DA_EN       = "true";
+    // FASE DEL RELOJ A LA SDRAM: PSDA_SEL solo tiene efecto con DYN_DA_EN="false".
+    // Con "true" el primitivo toma el puerto DINAMICO PSDA[3:0] (atado a 0000) y
+    // CLKOUTP sale a 0 grados = EN FASE con el reloj que lanza comando/direccion,
+    // justo lo que no queremos. Patron correcto = gowin_rpll2 del V9968 (hra1129).
+    // Punto de AJUSTE EN PLACA: barrer 0110 / 1000 / 1010 y elegir por checksum
+    // del loader, NO de oido (cada valor exige recompilar: es defparam).
+    defparam rpll_inst.PSDA_SEL        = "1000"; // 180 grados
+    defparam rpll_inst.DYN_DA_EN       = "false";
     defparam rpll_inst.DUTYDA_SEL      = "1000";
     defparam rpll_inst.CLKOUT_FT_DIR   = 1'b1;
     defparam rpll_inst.CLKOUTP_FT_DIR  = 1'b1;

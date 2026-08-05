@@ -42,6 +42,7 @@ module wv_to_sdram #(
     input  wire [7:0]  wv_wdata,
     output reg  [15:0] wv_dout,       // media-palabra {byte impar, byte par}
     output reg         wv_done,       // pulso 1 ciclo
+    output reg         sd_timeout,    // pegajoso: el watchdog llego a disparar
 
     // ---- lado ip_sdram (bus_*) ----
     output reg  [22:2] bus_address,
@@ -65,6 +66,21 @@ module wv_to_sdram #(
     reg        half;                     // wv_addr[1] latcheado (media-palabra)
     reg        was_ref;                  // la op emitida fue refresh
     reg        was_wr;                   // la op emitida fue escritura
+
+    // ---------------------------------------------------------------------
+    // WATCHDOG (auditoria 2026-08-05): si el controlador no responde, TODA la
+    // cadena se queda colgada — wave_sdram parado en ST_REQ, el loader esperando
+    // su done, wl_done a 0, el motor en reset y la placa muda sin sintoma. Este
+    // es el punto CORRECTO donde ponerlo: esta en el fondo de la cadena, asi que
+    // al desatascarlo se desatascan todos los clientes de arriba (loader Y motor).
+    // Al disparar: se cierra la operacion con dato envenenado y se vuelve a IDLE.
+    // ---------------------------------------------------------------------
+    localparam integer WDOG_LIMIT = 4096;   // ~38 us @108 MHz
+    reg [12:0] wdog;
+    reg [2:0]  st_d;
+    wire       st_changed = (st != st_d);
+    wire       wdog_fire  = (wdog >= WDOG_LIMIT[12:0]) &&
+                            (st == ST_ACCEPT || st == ST_RD || st == ST_WR || st == ST_REF);
 
     // --- temporizador de refresh ---
     reg [15:0] ref_cnt;
@@ -92,11 +108,27 @@ module wv_to_sdram #(
             bus_address <= 21'd0; bus_wdata <= 32'd0; bus_wdata_mask <= 4'hF;
             wv_dout <= 16'd0; wv_done <= 1'b0;
             half <= 1'b0; was_ref <= 1'b0; was_wr <= 1'b0;
+            wdog <= 13'd0; st_d <= ST_IDLE; sd_timeout <= 1'b0;
+        end
+        else if (wdog_fire) begin
+            // desatascar: cerrar la operacion en curso y volver a IDLE
+            wdog       <= 13'd0;
+            st_d       <= ST_IDLE;
+            sd_timeout <= 1'b1;                  // pegajoso, al LED
+            bus_valid  <= 1'b0;
+            bus_refresh<= 1'b0;
+            if (!was_ref) begin
+                wv_dout <= 16'hFFFF;             // dato envenenado
+                wv_done <= 1'b1;                 // libera a wave_sdram
+            end
+            st <= ST_DONE;                       // espera a que wv_req baje
         end
         else begin
             wv_done     <= 1'b0;     // pulsos por defecto a 0
             bus_valid   <= 1'b0;
             bus_refresh <= 1'b0;
+            st_d        <= st;
+            wdog        <= st_changed ? 13'd0 : (wdog + 13'd1);
             case (st)
             // ------------------------------------------------------------
             ST_IDLE: begin

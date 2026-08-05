@@ -51,22 +51,29 @@ add_file src/ip_sdram_tangnano20k_c.v
 add_file src/yrw801_loader.v
 add_file src/flash_rw.v
 
-# ----- audio -----
-add_file src/sigma_delta_dac.v
+# ----- front-end de bus WonderTANG 2.00b + I2S (tnCart, BSD-3) -----
+add_file wondertang/bus.sv
+add_file wondertang/wt_bus.sv
+add_file wondertang/i2s_audio_tx.sv
 
 # ----- relojes (rPLL GW2A) -----
 add_file clocks/pll_main.v
 add_file clocks/pll_eng.v
 
 # ----- top -----
-add_file src/moontang_top.v
+add_file src/moontang_top.sv
 
 # ----- constraints -----
 add_file constraints/moontang.cst
 add_file constraints/moontang.sdc
 
 # pines dedicados como GPIO: MSPI=flash del loader; SSPI/JTAG/etc = audio y libres
-set_option -use_mspi_as_gpio 1 -use_sspi_as_gpio 1 -use_jtag_as_gpio 1 -use_cpu_as_gpio 1 -use_done_as_gpio 1 -use_ready_as_gpio 1
+# SOLO MSPI (la flash del YRW801). NADA de jtag/cpu/done/ready como GPIO:
+# activan JTAGAsRegularIO y desconectan el JTAG con el core en marcha = la
+# trampa 'Gowin Device not found' que ya se sufrio en el Console 60K.
+#   MSPI = flash del YRW801; SSPI = pines 52/54/55/56 (datadir + DAC I2S de la
+#   WonderTANG). NADA de jtag/cpu/done/ready.
+set_option -use_mspi_as_gpio 1 -use_sspi_as_gpio 1
 set_option -top_module moontang_top -verilog_std sysv2017 -include_path src
 set_option -place_option 2
 set_option -route_option 1
