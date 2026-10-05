@@ -1,0 +1,6 @@
+# MSX-BASIC programs: keep them byte for byte (CRLF line ends and the 1Ah end
+# mark that MSX-BASIC's LOAD expects)
+*.asc -text
+# scripts run in WSL / Linux: always LF, also on a Windows checkout
+*.sh  text eol=lf
+*.py  text eol=lf
