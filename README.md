@@ -1,128 +1,85 @@
 # MoonTANG 🌙
 
-**An experimental MoonSound (OPL4 / YMF278B) cartridge for MSX, running on a
+**An experimental MoonSound (OPL4 / YMF278B) cartridge for MSX on a
 [Sipeed Tang Nano 20K](https://wiki.sipeed.com/hardware/en/tang/tang-nano-20k/nano-20k.html)
-(Gowin GW2AR‑18) in a [WonderTANG 2.0b](https://github.com/lfantoniosi/WonderTANG) carrier.**
+(Gowin GW2AR‑18).**
 
-MoonTANG puts a full OPL4 — **18‑channel OPL3 FM + 24‑slot PCM wavetable** — into an
-FPGA cartridge that plugs into a real MSX slot, so any MSX2+ can gain MoonSound.
-It is a spin‑off of the OPL4 block developed for the **MSXimus** (Tang Console 60K)
-core, ported to run **standalone**.
+A full OPL4 — **18‑channel OPL3 FM + 24‑voice PCM wavetable** — in an FPGA cartridge
+that plugs into a real MSX slot. It is a spin‑off of the OPL4 block of the
+**MSXimus** core, kept in sync with it, running standalone.
 
 **Scope is deliberately narrow: a MoonSound and nothing else.** No megaROM, no RAM
-expansion, no Nextor, no V9990. If you want those, use
-[tnCart](https://github.com/buppu3/tnCart) — it is excellent and this project
-borrows its bus front‑end.
+expansion, no Nextor. If you want those, use
+[tnCart](https://github.com/buppu3/tnCart) — this project borrows its bus front‑end.
 
----
+## ⚠️ Experimental — not yet run on hardware
 
-## ⚠️ EXPERIMENTAL — not yet run on hardware
+Both variants build to a clean, timing‑closed bitstream and pass a board‑level
+simulation, but **neither has been tested on a real machine**. If you build one,
+please open an issue with the result — good or bad.
 
-**This has never been tested on a real machine.** It builds to a clean, timing‑closed
-bitstream and the risky pieces are covered by simulation, but nothing has been
-validated on a physical MSX yet. Treat everything below as *intended* behaviour.
+## Two boards
 
-Read [`docs/BRINGUP_PLAN.md`](docs/BRINGUP_PLAN.md) before powering it up. Highlights:
-
-- **The YRW801 wave ROM is not included** (copyright). It is user‑supplied: 2 MB
-  flashed at `0x200000`. FM works without it; the wavetable half stays silent
-  until it is present.
-- **/WAIT and /INT go through inverting 2N3904s that the WonderTANG 2.0b lacks base
-  pulldowns for** (a documented board quirk). During the ~200 ms FPGA configuration
-  window they can self‑assert. Verify with a scope on cold boot, or fit the pulldowns.
-- **SDRAM clock phase** (`PSDA_SEL` in `fpga/clocks/pll_main.v`) is a tuning point:
-  sweep `0110 / 1000 / 1010` and pick by loader checksum, not by ear. Each value
-  needs its own bitstream — it is a `defparam`, not a runtime knob.
-
-If you build one, **please open an issue with results** — good or bad.
-
----
-
-## What it does
-
-| Feature | Ports | Status |
+| | [WonderTANG 2.0b / 2.02b](https://github.com/lfantoniosi/WonderTANG) | MSXhdmi_tn20k_smd (rev B) |
 |---|---|---|
-| OPL3 FM (YMF262), 18 ch | `C4h–C7h` | RTL validated in hardware on MSXimus |
-| PCM wavetable, 24 slots, YRW801 in SDRAM | `7Eh–7Fh` | RTL ported; needs bring‑up |
-| Register read‑back / status / device‑ID detection | `C4h–C7h`, `7Fh` | implemented |
-| Timer IRQ to the MSX (`/INT`) | — | wired (inverted for the 2.0b NPN) |
-| Stereo audio via the board's **I2S DAC + headphone jack** | — | verified in simulation |
+| MSX bus | multiplexed | direct |
+| Sound output | **the MSX's own audio** (mono), through the Tang's amplifier and jumper J3 to `SOUNDIN` — and, at the same time, **HDMI** (stereo) with a VU meter on screen | **HDMI** (stereo), with a VU meter on screen |
+| `/INT`, `/WAIT`, `/BUSDIR` | yes | **not routed on that PCB** — see the limits below |
+| Bitstream | `moontang_wondertang202b_hdmi_*.fs`, or `moontang_wondertang202b_*.fs` without the HDMI output | `moontang_smd_*.fs` |
+| Build script | `fpga/build_wt_hdmi.tcl` (with HDMI), `fpga/build.tcl` (without) | `fpga/build_smd.tcl` |
+| Guide | [`docs/WONDERTANG.md`](docs/WONDERTANG.md) | [`docs/SMD.md`](docs/SMD.md) |
 
-Audio comes out of the WonderTANG's own I2S DAC and headphone amplifier — which is
-faithful to the real MoonSound, that also has its own stereo jack rather than
-feeding the MSX's `SOUNDIN`.
+**A bitstream for one board must never be flashed on the other**: the pins do not
+match and the outputs would fight the bus buffers.
 
-## Resource usage (GW2AR‑18C)
+### Limits of the MSXhdmi_tn20k_smd board
 
-The whole cartridge — OPL4 FM + PCM engine + SDRAM controller + YRW801 loader +
-mixer + I2S + the multiplexed slot front‑end:
+The MSXhdmi_tn20k_smd board was designed as a video cartridge. Three slot lines a
+MoonSound uses are not connected to the FPGA, so on that board:
 
-```
-Logic  10908 / 20736   53 %
-CLS     6693 / 10368   65 %
-BSRAM      2 / 46       5 %
-DSP        3 MULT18X18  7 %
+- **no `/INT`** — software that waits for the OPL4 timer interrupt does not get it
+  (VGMPlay on anything but a turbo R plays far too slowly);
+- **no `/BUSDIR`** — on machines that need it to read I/O ports from a cartridge,
+  the MoonSound is not detected;
+- **no `/WAIT`** — use the MSX at its normal 3.58 MHz speed.
 
-Setup violated endpoints: 0
-Hold  violated endpoints: 3   (FF->RAM inside clk_eng: the chip's documented floor)
-```
+[`docs/SMD.md`](docs/SMD.md) has the details and what a board revision would need.
 
-## Architecture
+## What to flash
 
-```
-   MSX slot (bus MULTIPLEXED by the WonderTANG)
-   cd[7:0] · mp[7:0] · msel_n[2:0] · datadir · rd/wr/sltsl/wait/int/busdir
-        │
-        ▼
-   WT200B_BUS  ── 9-state scanner @108 MHz + PIN_FILTER ──▶ BUS_IF (ADDR[15:0], IORQ_n, …)
-        │                                        (tnCart, BSD-3)
-        ▼ (registered into clk_54m)
-   ┌──────────┐   C4-C7   ┌───────────┐
-   │ opl4fm   │◀─────────▶│ OPL3 FM   │
-   └────┬─────┘           └───────────┘
-   ┌────▼─────┐   7E-7F                    (clk_eng 37.125 MHz)
-   │ opl4_pcm │────── mem_* ──▶ wave_sdram ──▶ wv_to_sdram ──▶ ip_sdram ──▶ SDRAM (4 MB wave)
-   └────┬─────┘                     ▲
-        │                    yrw801_loader ◀── flash_rw ◀── SPI flash (YRW801 @0x200000)
-        ▼
-   FM + wave L/R ──▶ saturating mixer ──▶ I2S_AUDIO_TX ──▶ DAC + headphone jack
-```
+| Step | File | Address | Tool |
+|---|---|---|---|
+| 1 | the `.fs` for **your** board (see [`bitstream/`](bitstream/)) | `0x000000` | [Gowin Programmer](https://www.gowinsemi.com/en/support/download_eda/) — External Flash mode |
+| 2 | `yrw801.bin` — the 2 MB Yamaha YRW801 wave ROM, **not included** (copyright) | `0x200000` | Gowin Programmer — *exFlash C Bin Erase, Program thru GAO‑Bridge* |
 
-**Clocks** (all from the 27 MHz crystal): bus/SDRAM 108 MHz, host 54 MHz,
-FM 27 MHz (`CLKDIV /4` off the PLL — *not* the crystal pad, which cost 77 hold
-violations), PCM engine 37.125 MHz, I2S 1.542 MHz.
-
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full walk‑through.
+FM works without the YRW801; the wavetable half stays silent until it is there.
 
 ## Building
 
-Requires the Gowin toolchain (`gw_sh`). Verified with **1.9.11.03 Education** and
-**1.9.12.03 Standard** — both produce a clean build on this device (the SSRAM
-inference regression of the 1.9.12 line only affects Arora‑V / GW5AT‑60B, not the
-GW2AR‑18).
+Gowin toolchain 1.9.12.03 (`gw_sh`):
 
 ```sh
 cd fpga
-gw_sh build.tcl
-# -> impl/pnr/project.fs
+gw_sh build_wt_hdmi.tcl   # WonderTANG with HDMI      -> impl/pnr/moontang_wt_hdmi.fs
+gw_sh build.tcl           # WonderTANG without HDMI   -> impl/pnr/moontang_wt.fs
+gw_sh build_smd.tcl       # MSXhdmi_tn20k_smd board   -> impl/pnr/moontang_smd.fs
 ```
 
 ## Simulation
 
-The two pieces with no hardware precedent are covered, using Icarus Verilog:
+The whole design is simulated against a model of each board, wired **by FPGA pin
+number**: the pin table of each model comes from the real artefact (the official
+WonderTANG firmware constraints; the KiCad PCB of the HDMI board), so a wrong pin in
+our `.cst` shows up as a failing test. A Z80 bus model with real timing drives it,
+with models of the SPI flash and of the embedded SDRAM.
 
 ```sh
-# stereo I2S: channel assignment and bit alignment
-iverilog -g2012 -o /tmp/tb_i2s tools/sim/tb_i2s.v fpga/wondertang/i2s_audio_tx.sv && vvp /tmp/tb_i2s
-
-# YRW801 loader against the REAL flash_rw plus an SPI flash model serving a ramp
-iverilog -g2012 -o /tmp/tb tools/sim/tb_loader_real.v tools/sim/spi_flash_model.v \
-    fpga/src/yrw801_loader.v fpga/src/flash_rw.v && vvp /tmp/tb
+# WSL / Linux with Icarus Verilog and sv2v
+bash tools/sim/board/run_board.sh todo     # WonderTANG, with and without HDMI, + negative controls
+bash tools/sim/board_smd/run_smd.sh        # MSXhdmi_tn20k_smd: bus, memory, HDMI audio, VU meter
 ```
 
-Both pass. The loader test was checked against a **negative control** — the previous
-buggy handshake reintroduced on purpose — and it catches it with the predicted
-symptom (every byte written twice). A test that cannot fail proves nothing.
+See [`docs/VERIFICATION.md`](docs/VERIFICATION.md) for what is and is not covered.
 
 ## Credits & thanks
 
@@ -138,19 +95,23 @@ MoonTANG is a thin integration on top of excellent open work. See
   of the OPL4 wavetable, derived from **MAME**'s `ymf278b.cpp` by **R. Belmont,
   Olivier Galibert and hap**.
 - **Shinobu Hashimoto** (`buppu3`) — [**tnCart**](https://github.com/buppu3/tnCart)
-  (BSD‑3), whose MSX bus interface and multiplexed slot front‑end MoonTANG uses.
+  (BSD‑3), whose multiplexed slot front‑end the WonderTANG variant uses.
 - **Albert Herranz** (`herraa1`) — [**tnCartWonder**](https://github.com/herraa1/tnCartWonder),
   the WonderTANG port, the `wt200b` board definition and the I2S transmitter.
 - **luca / lfantoniosi** — the [**WonderTANG**](https://github.com/lfantoniosi/WonderTANG)
   cartridge (BSD‑2) and its authoritative pinout.
+- **Javier Abadia** (`jabadiagm`) — the MSXhdmi / Asgard cartridge the HDMI board
+  derives from; its pinout and the way its firmware turns the data bus around.
+- **Sameer Puri** — [**hdl‑util/hdmi**](https://github.com/hdl-util/hdmi)
+  (MIT / Apache‑2.0), the HDMI transmitter with audio.
 - **Takayuki Hara** (`t.hara` / hra1129) — the `ip_sdram` controller from the V9968
   cartridge project.
 - **Dan Gisselquist** — the async FIFO (`afifo.v`, GPL‑3.0) in the FM host interface.
-- **Gowin Semiconductor** — the rPLL / CLKDIV primitives.
+- **Gowin Semiconductor** — the rPLL / CLKDIV / OSER10 primitives.
 
 And **Claude** (Anthropic) — co‑author of this port: the standalone integration,
-clocking, SDRAM bridge, loader, mixer, constraints and testbenches were written in
-pair‑programming with Claude. See commit trailers.
+clocking, SDRAM bridge, loader, mixer, VU meter, constraints and testbenches were
+written in pair‑programming with Claude. See commit trailers.
 
 ## License
 

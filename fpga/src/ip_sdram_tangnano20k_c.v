@@ -55,7 +55,18 @@
 //-----------------------------------------------------------------------------
 
 module ip_sdram #(
-	parameter		FREQ = 85_909_080	//	Hz
+	parameter		FREQ = 85_909_080,	//	Hz
+	// MoonTANG (04/10/2026): flanco de captura del dato de lectura.
+	//   0 = posedge clk_sdram dentro de "finish" (original de HRA, afinado para
+	//       85,9 MHz: el dato dispone de UN periodo = 11,6 ns para salida de
+	//       reloj + tAC + entrada).
+	//   1 = posedge clk al FINAL de "finish" (medio ciclo despues). A 108 MHz el
+	//       periodo son 9,26 ns y la captura original cae en el borde de la
+	//       ventana valida; medio ciclo mas tarde queda centrada. Es el punto
+	//       que usan los dos disenos validados a 108 MHz / CL2 / reloj a 180
+	//       grados en este mismo chip: el firmware oficial de la WonderTANG
+	//       (sdram.v de nand2mario) y tnCart (sdram.sv).
+	parameter		RD_CAPTURE_CLK = 0
 ) (
 	input				reset_n,
 	input				clk,				//	85.90908MHz
@@ -439,14 +450,28 @@ module ip_sdram #(
 		end
 	end
 
-	always @( posedge clk_sdram ) begin
-		if( !reset_n ) begin
-			ff_sdr_read_data	<= 32'd0;
-		end
-		else if( ff_main_state == c_main_state_finish ) begin
-			ff_sdr_read_data	<= IO_sdram_dq;
+	generate
+	if( RD_CAPTURE_CLK ) begin : g_cap_clk
+		always @( posedge clk ) begin
+			if( !reset_n ) begin
+				ff_sdr_read_data	<= 32'd0;
+			end
+			else if( ff_main_state == c_main_state_finish ) begin
+				ff_sdr_read_data	<= IO_sdram_dq;
+			end
 		end
 	end
+	else begin : g_cap_sdram
+		always @( posedge clk_sdram ) begin
+			if( !reset_n ) begin
+				ff_sdr_read_data	<= 32'd0;
+			end
+			else if( ff_main_state == c_main_state_finish ) begin
+				ff_sdr_read_data	<= IO_sdram_dq;
+			end
+		end
+	end
+	endgenerate
 
 	always @( posedge clk ) begin
 		if( !reset_n ) begin

@@ -152,6 +152,10 @@ reg        rd_done_t;               // x1: flip al completar lectura 7F
 reg [7:0]  rd_data_x;
 reg        pcm_t_x;                 // x1: flip a cada muestra nueva
 reg signed [15:0] pcm_l_x, pcm_r_x; // x1: OUT1 retenido
+// MoonTANG: mix_fm arranca a 0, el valor de encendido del chip. Sin esto, en
+// simulacion vale X hasta la primera muestra del motor (tras copiar la YRW801)
+// y la X llega al audio HDMI. (En la declaracion del puerto Gowin lo ignora.)
+initial mix_fm = 6'd0;
 reg [5:0] mixfm_s0, mixfm_s1;       // _110: F8 motor->host (cuasi-estatico)
 always @(posedge clk_host) begin
     mixfm_s0 <= eng_mixfm;
@@ -186,7 +190,61 @@ end
 
 assign wave_status = {ld_b2, st_b2};
 // 7E = status (como el chip: todo A!=5 lee status); 7F = ultimo dato leido
-assign wave_dout = addr_r[0] ? rd_data_h : {6'b000000, ld_b2, st_b2};
+// ---------------------------------------------------------------------------
+// MOONTANG — ESPEJO DE LECTURA DE 7Fh (RD_MIRROR, por defecto 0 = como el
+// MSXimus Z). Para placas SIN /WAIT (MSXhdmi_tn20k_smd).
+//
+// El dato de un IN 7Fh hace un viaje host -> motor -> host de ~430-480 ns y el
+// /WAIT lo cubre. Sin /WAIT ese viaje solo llega a tiempo con un Z80 a 3,58 MHz
+// y el motor en reposo; con el motor sonando o en turbo se lee el byte de la
+// lectura ANTERIOR. Con RD_MIRROR = 1 los dos registros que el software lee de
+// verdad se sirven desde el dominio host, sin viaje:
+//   - 06h (dato de memoria): espejo de MEMDAT, que el motor ya tiene precargado
+//     desde que se escribio la direccion (reg 05h) o desde la lectura anterior.
+//     El espejo visible se CONGELA mientras dura el IN: sin eso podria cambiar
+//     al byte siguiente justo en la ventana de muestreo del Z80.
+//   - 02h (identificacion): {001, MEMMODE} con una replica de lo escrito.
+// El viaje al motor se sigue haciendo igual (es el que avanza MEMADDR y lanza
+// la precarga del byte siguiente). El resto de registros no cambia.
+// ---------------------------------------------------------------------------
+parameter RD_MIRROR = 0;
+reg        new_sel_h, new2_h;       // replica de la seleccion de NEW2 del motor
+reg [7:0]  sel_h;                   // replica del registro wave seleccionado (7Eh)
+reg [4:0]  memmode_h;               // replica de MEMMODE (reg 02h)
+reg        mdt1, mdt2, mdt3, mdt_ack;
+reg [7:0]  md_new, md_vis;          // espejo de MEMDAT: recien llegado / visible
+reg        md_t;                    // (dominio motor) conmuta = MEMDAT nuevo en md_x
+reg [7:0]  md_x;
+always @(posedge clk_host or negedge rst_n) begin
+    if (!rst_n) begin
+        new_sel_h <= 1'b0; new2_h <= 1'b0; sel_h <= 8'd0; memmode_h <= 5'd0;
+        mdt1 <= 1'b0; mdt2 <= 1'b0; mdt3 <= 1'b0; mdt_ack <= 1'b0;
+        md_new <= 8'd0; md_vis <= 8'd0;
+    end
+    else begin
+        if (wr_act && !wr_act_d) begin
+            new_sel_h <= 1'b0;
+            case (a3)
+                3'd2: new_sel_h <= (din_r == 8'h05);                 // C6h <- 05h
+                3'd3: if (new_sel_h && din_r[1]) new2_h <= 1'b1;     // C7h con NEW2
+                3'd4: if (new2_h) sel_h <= din_r;                    // 7Eh
+                3'd5: if (new2_h && sel_h == 8'h02) memmode_h <= din_r[4:0];
+                default: ;
+            endcase
+        end
+        mdt1 <= md_t; mdt2 <= mdt1; mdt3 <= mdt2;
+        if (mdt3 != mdt_ack) begin
+            mdt_ack <= mdt3;
+            md_new  <= md_x;            // estable: cambio hace >= 3 ciclos host
+        end
+        if (!rd_dat) md_vis <= md_new;  // CONGELADO mientras dura un IN 7Fh
+    end
+end
+wire [7:0] rd_fast = !new2_h          ? rd_data_h :
+                     (sel_h == 8'h06) ? md_vis :
+                     (sel_h == 8'h02) ? {3'b001, memmode_h} :
+                                        rd_data_h;
+assign wave_dout = addr_r[0] ? (RD_MIRROR ? rd_fast : rd_data_h) : {6'b000000, ld_b2, st_b2};
 
 // /WAIT durante IN 7Fh: el round-trip al motor son ~300-600ns (la lectura de
 // reg6 dispara su propio fetch DDR3, que congela el CE del motor un rato) y
@@ -242,13 +300,17 @@ always @(posedge clk_eng or negedge erst_n) begin
     end
 end
 
-// --- CE fraccionario 33.8688/37.125 = 6272/6875 exacto (MoonTANG: clk_eng
-//     37.125 MHz del PLL de 27 MHz; 37.5 exigía un PFD de PLL fuera de rango) ---
+// --- CE fraccionario 33.8688/f(clk_eng); por defecto 37.125 -> 6272/6875 ---
+// (parametros: cada placa da la fraccion de SU reloj de motor)
+// MOONTANG (unica divergencia de este fichero frente al MSXimus Z, junto con el
+// divisor de baudios de abajo): clk_eng aqui es 37.125 MHz (27 x 11 / 8 del rPLL
+// de la Tang Nano 20K). Los 37.5 MHz del MSXimus exigirian un PFD de 1.5 MHz,
+// fuera del rango del rPLL de la GW2A. En el MSXimus: 14112/15625.
 // Durante un stall el acumulador SIGUE sumando (credito) y al soltar
 // dispara CEs seguidos hasta recuperar: la fs media queda clavada.
-// 24 bits = ~36us de credito acumulable (un fetch de SDRAM son ~0.3us).
-localparam [23:0] CE_INC = 24'd6272;
-localparam [23:0] CE_MOD = 24'd6875;
+// 24 bits = ~36us de credito acumulable (un fetch DDR3 son ~0.3us).
+parameter  [23:0] CE_INC = 24'd6272;
+parameter  [23:0] CE_MOD = 24'd6875;
 reg [23:0] ce_acc;
 reg        ce;
 reg        mem_inflight;
@@ -415,11 +477,30 @@ wire [21:0] e_addr22 = {~e_mcs_n[1], e_ma};
 // (la nota se trituraba su propia cache), y las notas agudas (paso >=2)
 // dejaban atras el lookahead fijo de +2. Con 8 palabras caben cabecera
 // y stream, y el stride por slot predice el salto real.
-reg [15:0]  lb_word [0:255];
-reg [17:0]  lb_tagA [0:255];       // addr[21:4]
+// ERA v3 (sin SSRAM): {tagA, word} viven en UNA BSRAM SDPB 256x34 con
+// lectura SINCRONA. Gowin retiro el SSRAM del GW5AT-60B por un problema de
+// silicio (soporte, 03/08/2026). lb_q corresponde a la direccion del ciclo
+// ANTERIOR; como el motor registra MEM_A y MEM_RD en el MISMO flanco de CE
+// y MRD_N dura >=2 CE, e_slot/e_addr22 son estables durante todo el lookup
+// => la resolucion del hit se desplaza 1 ciclo (rd_edge_d1). El deadline del
+// motor (CYCLE1_CE, >=4 CE tras MEM_START) tiene holgura de sobra: el hit
+// sigue soltando la CE antes de que nadie la espere.
+// Colision fill/lookup al mismo indice y flanco: SDPB lee el dato VIEJO =>
+// tag rancio => miss => fetch redundante (correcto, solo mas lento; raro).
+(* syn_ramstyle = "block_ram" *) reg [33:0] lb_mem [0:255];
+reg [33:0] lb_q;
+reg         rd_edge_d1;            // lookup en vuelo (lb_q valido al salir)
 reg [255:0] lb_v;
 reg [255:0] lb_pfb;                // entrada traida por prefetch (OBL tag)
-reg [20:0]  sl_last [0:31];        // ultima palabra pedida por slot
+// era v3: sl_last (ultima palabra pedida por slot) parte en BSRAM (18b) +
+// 3b altos en FF — 576 FF y un mux 21b x 32:1 menos. La lectura sincrona
+// vale porque e_slot es estable desde antes de rd_edge (MEM_A y MEM_RD se
+// registran juntos) y el consumo va en rd_edge_d1; escritura y lectura en
+// el mismo flanco del mismo slot = read-old = exactamente lo que hacia el
+// original (dw se calculaba con el valor viejo ANTES de escribir el nuevo).
+(* syn_ramstyle = "block_ram" *) reg [17:0] sl_mem [0:31];
+reg [20:18] sl_hi [0:31];
+reg [17:0]  sl_q;
 reg [2:0]   sl_stride [0:31];      // stride en palabras (1..4; 0=sin entrenar)
 wire [2:0]  eff_stride = (sl_stride[e_slot] == 3'd0) ? 3'd2 : sl_stride[e_slot];
 wire [4:0]  e_slot;                // slot dueno del fetch (del motor)
@@ -440,7 +521,19 @@ reg [3:0]  ifw_hits;
 reg [3:0]  alive;                  // avanza con cada CE: latido visible
 assign diag = {ifw_hits, alive};
 
-reg mrd_d1, mwr_d1, done_d1;
+reg mrd_d1, mwr_d1;
+// MOONTANG (05/10/2026): done_d1 SIN reset. La cadena de memoria (wave_sdram)
+// vive en el reset de encendido y sobrevive a un /RESET del MSX, asi que su
+// toggle de "hecho" puede valer 1 al soltar el reset. Con done_d1 reseteado a 0,
+// el primer ciclo veia un "hecho" que no era de ninguna operacion: soltaba el
+// puerto y metia en la cache, con la etiqueta de la direccion 0, la ultima
+// palabra leida antes del reset (en el banco, YRW801[000000] devolvia 55h en 2
+// de 96 lecturas tras un /RESET). Siguiendo siempre al toggle, al soltar el reset
+// los dos valen lo mismo. Ademas un "hecho" solo cuenta si hay una operacion en
+// el puerto (port_busy): uno que llegue tarde (tras un /RESET o tras el perro
+// guardian de mem_inflight) ya no ensucia la cache.
+reg done_d1 = 1'b0;
+always @(posedge clk_eng) done_d1 <= mem_done_t;
 reg        fill_pend;              // _96: fill de la cache diferido 1 ciclo
 reg [20:0] fill_tag;
 reg        fill_is_pf;             // _107: el fill viene de un prefetch
@@ -464,14 +557,60 @@ wire       pfq_full  = (pfq_wp + 3'd1 == pfq_rp);
 reg        pf_kill;                // _107: el pf en vuelo quedo rancio
 wire       rd_edge = ~e_mrd_n && !mrd_d1;
 wire       wr_edge = ~e_mwr_n && !mwr_d1;
+
+// era v3: retencion de UNA plaza para la escritura que colisiona con la
+// resolucion de una lectura (ver la nota del bloque de escritura). El
+// original no la necesitaba porque su exclusion era rd_edge/wr_edge, que
+// el motor nunca solapa; al mover la resolucion a rd_edge_d1 el solape
+// pasa a ser real con las escrituras de CPU a la RAM de ondas.
+reg         wr_hold;
+reg [21:0]  wrh_addr;
+reg [7:0]   wrh_data;
+reg [4:0]   wrh_slot;
+// La escritura solo entra con la plaza del arbitro LIBRE: si entrase con
+// un fallo de lectura ya encolado lo machacaria (eng_pend es de UNA plaza)
+// y ese fetch no volveria nunca -> mem_inflight clavado -> CE congelada
+// hasta el watchdog de 3,5 ms -> el status del motor se queda pegado.
+wire        wre_free = !rd_edge_d1 && !eng_pend;
+wire        wre_go   = wre_free && (wr_hold || wr_edge);
+wire [21:0] wre_addr = wr_hold ? wrh_addr : e_addr22;
+wire [7:0]  wre_data = wr_hold ? wrh_data : e_mdo;
+wire [4:0]  wre_slot = wr_hold ? wrh_slot : e_slot;
+
+// Puertos de la BSRAM de cache (era v3). Escritura = fill; lectura corre
+// SIEMPRE (la direccion es cuasi-estatica alrededor de rd_edge). Sin reset:
+// una BSRAM no lo tiene; la validez la gobierna lb_v (FF), como siempre.
+always @(posedge clk_eng) begin
+    if (fill_pend)
+        lb_mem[{fill_slot,fill_tag[2:0]}] <= {fill_tag[20:3], mem_rword};
+    lb_q <= lb_mem[{e_slot, e_addr22[3:1]}];
+end
+
+// puertos de la BSRAM de sl_last (era v3): escritura en el miss — la misma
+// condicion del bloque strided del always principal — y lectura corriendo
+// siempre sobre e_slot (cuasi-estatico alrededor del lookup)
+wire lb_hit_now = lb_v[{e_slot,e_addr22[3:1]}] && (lb_q[33:16] == e_addr22[21:4]);
+// if/else EXCLUYENTE (leccion _139): escritura y lectura comparten la
+// direccion e_slot => Gowin infiere puerto UNICO, y leer durante we exige
+// el WRITE_MODE 2'b10 que Arora-V no soporta (PA2122, v3b014). Con el
+// else, el ciclo de escritura no refresca sl_q — irrelevante: su consumo
+// (strided, en rd_edge_d1) usa el valor registrado el ciclo ANTERIOR.
+always @(posedge clk_eng) begin
+    if (rd_edge_d1 && !lb_hit_now)
+        sl_mem[e_slot] <= e_addr22[18:1];
+    else
+        sl_q <= sl_mem[e_slot];
+end
 always @(posedge clk_eng or negedge erst_n) begin
     if (!erst_n) begin
-        mrd_d1 <= 1'b0; mwr_d1 <= 1'b0; done_d1 <= 1'b0;
+        mrd_d1 <= 1'b0; mwr_d1 <= 1'b0;
         mem_req <= 1'b0; mem_we <= 1'b0;
         mem_addr <= 22'd0; mem_wdata <= 8'd0;
         mem_inflight <= 1'b0;
         lb_v <= 256'd0; lb_pfb <= 256'd0;
         lb_hit <= 1'b0; lb_fast <= 1'b0; lb_byte <= 8'd0;
+        rd_edge_d1 <= 1'b0;
+        wr_hold <= 1'b0; wrh_addr <= 22'd0; wrh_data <= 8'd0; wrh_slot <= 5'd0;
         ifw <= 18'd0; ifw_hits <= 4'd0; alive <= 4'd0;
         fill_pend <= 1'b0; fill_tag <= 21'd0; fill_is_pf <= 1'b0;
         fill_slot <= 5'd0; cur_op_slot <= 5'd0; eng_pend_slot <= 5'd0;
@@ -483,7 +622,6 @@ always @(posedge clk_eng or negedge erst_n) begin
     else begin
         mrd_d1 <= ~e_mrd_n;
         mwr_d1 <= ~e_mwr_n;
-        done_d1 <= mem_done_t;
         mem_req <= 1'b0;
         if (ce) alive <= alive + 4'd1;
         // _95: el done se consume ANTES y en un if INDEPENDIENTE (historia:
@@ -491,7 +629,7 @@ always @(posedge clk_eng or negedge erst_n) begin
         // quedaba clavado). _96: el fill va DIFERIDO 1 ciclo (fill_pend):
         // capturar mem_rword en el primer avistamiento del toggle es una
         // carrera de hold de picosegundos que en placa corrompia lineas.
-        if (mem_done_t != done_d1) begin
+        if (mem_done_t != done_d1 && port_busy) begin
             port_busy <= 1'b0;
             if (op_is_pf) begin
                 op_is_pf <= 1'b0;
@@ -515,8 +653,8 @@ always @(posedge clk_eng or negedge erst_n) begin
         end
         if (fill_pend) begin
             fill_pend <= 1'b0;
-            lb_word[{fill_slot,fill_tag[2:0]}] <= mem_rword;  // asentado (_96)
-            lb_tagA[{fill_slot,fill_tag[2:0]}] <= fill_tag[20:3];
+            // el dato {tag,word} lo escribe el puerto BSRAM (arriba); aqui
+            // solo la contabilidad FF — asentado (_96)
             lb_v[{fill_slot,fill_tag[2:0]}]    <= 1'b1;
             lb_pfb[{fill_slot,fill_tag[2:0]}]  <= fill_is_pf;
         end
@@ -527,14 +665,30 @@ always @(posedge clk_eng or negedge erst_n) begin
             lb_fast <= 1'b0;
             mem_inflight <= 1'b0;
         end
+        // retencion de la escritura colisionada (una plaza; el motor no
+        // emite dos escrituras en ciclos consecutivos)
+        if (wr_edge && !wre_go) begin       // no puede entrar ya -> se retiene
+            wr_hold  <= 1'b1;
+            wrh_addr <= e_addr22;
+            wrh_data <= e_mdo;
+            wrh_slot <= e_slot;
+        end
+        else if (wr_hold && wre_go) wr_hold <= 1'b0;
         if (rd_edge) begin
+            // era v3: la resolucion espera a lb_q (1 ciclo); la CYCLE1 se
+            // sujeta desde YA para que el deadline no se cuele (_94)
+            rd_edge_d1   <= 1'b1;
+            mem_inflight <= 1'b1;
+        end
+        else
+            rd_edge_d1 <= 1'b0;
+        if (rd_edge_d1) begin
             if (lb_v[{e_slot,e_addr22[3:1]}] &&
-                (lb_tagA[{e_slot,e_addr22[3:1]}] == e_addr22[21:4])) begin
+                (lb_q[33:16] == e_addr22[21:4])) begin
                 lb_hit  <= 1'b1;                   // HIT: sin transaccion
-                lb_byte <= e_addr22[0] ? lb_word[{e_slot,e_addr22[3:1]}][15:8]
-                                       : lb_word[{e_slot,e_addr22[3:1]}][7:0];
+                lb_byte <= e_addr22[0] ? lb_q[15:8]
+                                       : lb_q[7:0];
                 lb_fast <= 1'b1;                   // completa en 1 ciclo
-                mem_inflight <= 1'b1;              // sujeta la CYCLE1 (_94)
                 if (lb_pfb[{e_slot,e_addr22[3:1]}]) begin  // OBL etiquetado
                     lb_pfb[{e_slot,e_addr22[3:1]}] <= 1'b0;
                     if (!pfq_full) begin
@@ -557,12 +711,16 @@ always @(posedge clk_eng or negedge erst_n) begin
                 //  -> vuelve a 2, el caso 12-bit paso 1)
                 begin : strided
                     reg [20:0] dw;
-                    dw = e_addr22[21:1] - sl_last[e_slot];
+                    // era v3: el valor viejo viene de {sl_hi (FF), sl_q
+                    // (BSRAM, registrada)} — identico al async de antes
+                    // porque e_slot lleva estable desde antes de rd_edge.
+                    // La escritura nueva vive en su propio always (BSRAM).
+                    dw = e_addr22[21:1] - {sl_hi[e_slot], sl_q};
                     if (dw != 21'd0 && dw <= 21'd4)
                         sl_stride[e_slot] <= dw[2:0];
                     else if (dw > 21'd8)
                         sl_stride[e_slot] <= 3'd2;
-                    sl_last[e_slot] <= e_addr22[21:1];
+                    sl_hi[e_slot] <= e_addr22[21:19];
                 end
                 if (!pfq_full) begin    // pf al stride del slot
                     pfq[pfq_wp] <= {e_slot, e_addr22[21:1]
@@ -571,14 +729,23 @@ always @(posedge clk_eng or negedge erst_n) begin
                 end
             end
         end
-        else if (wr_edge) begin
+        // ⚠️ era v3, DEFECTO PROPIO CORREGIDO: al desplazar la resolucion a
+        // rd_edge_d1, este else-if paso a poder disparar de verdad. En el
+        // original la exclusion era rd_edge/wr_edge, que NUNCA coinciden
+        // (el motor conduce MRD_N y MWR_N excluyentes); con rd_edge_d1 SI
+        // coinciden, porque las escrituras de la RAM de ondas las mete la
+        // CPU (reg 06) de forma asincrona a los fetches del motor. Una
+        // escritura que caia justo un ciclo despues de una lectura se
+        // DESCARTABA EN SILENCIO. Ahora se retiene una plaza y entra al
+        // ciclo siguiente.
+        else if (wre_go) begin
             lb_hit <= 1'b0;
-            if (e_addr22[21]) begin                // solo la RAM es escribible
+            if (wre_addr[21]) begin                // solo la RAM es escribible
                 eng_pend      <= 1'b1;
                 eng_pend_we   <= 1'b1;
-                eng_pend_addr <= e_addr22;
-                eng_pend_slot <= e_slot;
-                eng_pend_data <= e_mdo;
+                eng_pend_addr <= wre_addr;
+                eng_pend_slot <= wre_slot;
+                eng_pend_data <= wre_data;
                 mem_inflight  <= 1'b1;             // tambien en escritura (_91)
                 lb_v   <= 256'd0;                  // _107c: FLUSH total (una
                 lb_pfb <= 256'd0;                  //  escritura CPU no tiene
@@ -588,7 +755,7 @@ always @(posedge clk_eng or negedge erst_n) begin
                                                    //  netlist, solo claridad)
                 fill_pend <= 1'b0;                 // _96: cancelar fill pendiente
                 pfq_rp <= pfq_wp;                  // _107b: vaciar wants rancios
-                if (port_busy && op_is_pf && mem_addr[21:1] == e_addr22[21:1])
+                if (port_busy && op_is_pf && mem_addr[21:1] == wre_addr[21:1])
                     pf_kill <= 1'b1;               // pf en vuelo quedaria rancio
             end
             // _107: escritura con addr[21]==0 (region ROM) = NO-OP, como el
@@ -610,7 +777,10 @@ always @(posedge clk_eng or negedge erst_n) begin
                 op_is_pf  <= 1'b0;
                 port_busy <= 1'b1;
             end
-            else if (!pfq_empty && !wr_edge && !rd_edge) begin
+            else if (!pfq_empty && !wr_edge && !rd_edge && !rd_edge_d1) begin
+                // (!rd_edge_d1 era v3: un miss resuelve en N+1 y su eng_pend
+                //  no es visible hasta N+2 — sin el guard un pf le robaria
+                //  el puerto y el motor esperaria detras de un fetch ajeno)
                 pfq_rp    <= pfq_rp + 3'd1;
                 mem_req   <= 1'b1;
                 mem_we    <= 1'b0;
@@ -637,6 +807,22 @@ always @(posedge clk_eng or negedge erst_n) begin
             end
         end
         else ifw <= 18'd0;
+    end
+end
+
+// MOONTANG (RD_MIRROR): MEMDAT hacia el host, con toggle y dato retenido.
+reg [2:0] md_hold;
+always @(posedge clk_eng or negedge erst_n) begin
+    if (!erst_n) begin
+        md_x <= 8'd0; md_t <= 1'b0; md_hold <= 3'd0;
+    end
+    else begin
+        if (md_hold != 3'd0) md_hold <= md_hold - 3'd1;
+        else if (e_mdo != md_x) begin
+            md_x    <= e_mdo;
+            md_t    <= ~md_t;
+            md_hold <= 3'd5;           // dato quieto >= 5 ciclos del motor
+        end
     end
 end
 
@@ -762,7 +948,7 @@ YMF278B u_engine (
 //  lvl_min es ventana-local, se rearma en cada trama)
 // ===========================================================================
 parameter DBG_FRAME_CYC = 32'd9375000;   // ~250ms a 37.5MHz (el TB lo acorta)
-parameter DBG_BAUD_DIV  = 9'd322;        // MoonTANG: clk_eng 37.125e6/115200 = 322.3
+parameter DBG_BAUD_DIV  = 9'd322;        // MOONTANG: 37.125e6/115200 = 322.3 (MSXimus: 326)
 
 reg [15:0] c_rep, c_drop, c_push, c_tick, c_miss, c_pf;
 reg [3:0]  lvl_min_w;
@@ -793,8 +979,9 @@ always @(posedge clk_eng or negedge erst_n) begin
         // "miss" en lecturas que la cache real de 8 palabras acertaba; los
         // "44100/6140 constantes" de la saga eran en parte este espejismo).
         // Ahora replica EXACTA del hit real: {slot, addr[3:1]}, tag[21:4].
-        if (rd_edge && !(lb_v[{e_slot,e_addr22[3:1]}] &&
-            (lb_tagA[{e_slot,e_addr22[3:1]}] == e_addr22[21:4]))) c_miss <= c_miss + 16'd1;
+        // era v3: la replica del hit se desplaza con el (rd_edge_d1 + lb_q)
+        if (rd_edge_d1 && !(lb_v[{e_slot,e_addr22[3:1]}] &&
+            (lb_q[33:16] == e_addr22[21:4]))) c_miss <= c_miss + 16'd1;
         if (mem_req && op_is_pf) c_pf <= c_pf + 16'd1;
         if (rf_lvl < lvl_min_w) lvl_min_w <= rf_lvl;
         if (dbg_snap) lvl_min_w <= 4'hF;                  // ventana nueva
@@ -830,10 +1017,10 @@ always @(posedge clk_eng or negedge erst_n) begin
             fr[10] <= c_miss[15:8]; fr[11] <= c_miss[7:0];
             fr[12] <= c_pf[15:8];   fr[13] <= c_pf[7:0];
             fr[14] <= {lvl_min_w, rf_lvl};
-            // _114diag: nibble alto = estado de VIDEO (2FF), bajo = alive del
-            // motor. Yo (COM11) veo: alive avanza=motor vivo; vid[2:0]=frame_cnt
-            // avanza entre tramas => el pipeline de video GENERA FRAMES;
-            // vid[3]=pll27_lock. (Restaurar a {ifw_hits,alive} tras diagnostico.)
+            // niquelado B: RESTAURADO a {ifw_hits, alive} — lo que documenta
+            // la spec de la trama (:758) y espera tools/dbg_reader.py. El
+            // diagnostico _114diag ({vid_s1, alive}) dejaba invisibles los
+            // hits del watchdog, el centinela de la salud del motor.
             fr[15] <= {ifw_hits, alive};   // el sum va aparte como byte 16
             seq <= seq + 8'd1;
             fr_i <= 5'd0; bit_i <= 0; baud <= 0; sum <= 8'd0;

@@ -1,0 +1,122 @@
+// ============================================================================
+//  moontang_smd.cst — MoonTANG sobre el cartucho MSXhdmi_tn20k_smd (rev B)
+//                     Tang Nano 20K · GW2AR-LV18QN88C8/I7
+// ----------------------------------------------------------------------------
+//  Pinout de la PCB real (kicad/Cartucho_MSX_Tang_Nano_20k_V9958.kicad_pcb),
+//  el mismo de fpga/msx_asgard.cst de jabadiagm y de SlotDoctor para esta placa.
+//
+//  Direcciones y control (U1, U2, U4) solo van del MSX a la FPGA. Los datos
+//  (U3) cambian de sentido con datadir (pin 18): 1 = MSX -> FPGA; R1 de 10k a
+//  3V3 lo mantiene asi mientras la FPGA se configura.
+// ============================================================================
+
+// ---- reloj de la placa ----
+IO_LOC  "clk" 4;
+IO_PORT "clk" IO_TYPE=LVCMOS33 PULL_MODE=NONE BANK_VCCIO=3.3;
+
+// ---- sentido del 245 de datos U3: 1 = MSX -> FPGA ----
+IO_LOC  "datadir" 18;
+IO_PORT "datadir" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
+
+// ---- bus de datos D0-D7 (U3), bidireccional ----
+IO_LOC  "bus_d[0]" 19;
+IO_PORT "bus_d[0]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
+IO_LOC  "bus_d[1]" 20;
+IO_PORT "bus_d[1]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
+IO_LOC  "bus_d[2]" 17;
+IO_PORT "bus_d[2]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
+IO_LOC  "bus_d[3]" 31;
+IO_PORT "bus_d[3]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
+IO_LOC  "bus_d[4]" 30;
+IO_PORT "bus_d[4]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
+IO_LOC  "bus_d[5]" 29;
+IO_PORT "bus_d[5]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
+IO_LOC  "bus_d[6]" 26;
+IO_PORT "bus_d[6]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
+IO_LOC  "bus_d[7]" 25;
+IO_PORT "bus_d[7]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
+
+// ---- bus de direcciones A0-A15 (U1, U2), solo entrada ----
+IO_LOC  "bus_a[0]" 28;
+IO_PORT "bus_a[0]" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "bus_a[1]" 27;
+IO_PORT "bus_a[1]" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "bus_a[2]" 16;
+IO_PORT "bus_a[2]" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "bus_a[3]" 15;
+IO_PORT "bus_a[3]" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "bus_a[4]" 77;
+IO_PORT "bus_a[4]" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "bus_a[5]" 85;
+IO_PORT "bus_a[5]" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "bus_a[6]" 74;
+IO_PORT "bus_a[6]" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "bus_a[7]" 73;
+IO_PORT "bus_a[7]" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "bus_a[8]" 48;
+IO_PORT "bus_a[8]" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "bus_a[9]" 51;
+IO_PORT "bus_a[9]" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "bus_a[10]" 54;
+IO_PORT "bus_a[10]" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "bus_a[11]" 56;
+IO_PORT "bus_a[11]" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "bus_a[12]" 41;
+IO_PORT "bus_a[12]" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "bus_a[13]" 42;
+IO_PORT "bus_a[13]" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "bus_a[14]" 80;
+IO_PORT "bus_a[14]" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "bus_a[15]" 76;
+IO_PORT "bus_a[15]" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+
+// ---- control (U4), solo entrada ----
+IO_LOC  "bus_mreq_n" 52;
+IO_PORT "bus_mreq_n" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "bus_iorq_n" 53;
+IO_PORT "bus_iorq_n" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "bus_rd_n" 71;
+IO_PORT "bus_rd_n" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "bus_wr_n" 72;
+IO_PORT "bus_wr_n" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "bus_reset_n" 86;
+IO_PORT "bus_reset_n" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "bus_sltsl_n" 55;
+IO_PORT "bus_sltsl_n" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "bus_clock" 49;
+IO_PORT "bus_clock" IO_TYPE=LVCMOS33 PULL_MODE=NONE BANK_VCCIO=3.3;
+
+// ---- HDMI (conector de la propia Tang Nano 20K) ----
+IO_LOC  "tmds_data_p[0]" 35,36;
+IO_PORT "tmds_data_p[0]" IO_TYPE=LVCMOS33D PULL_MODE=NONE DRIVE=8 BANK_VCCIO=3.3;
+IO_LOC  "tmds_data_p[1]" 37,38;
+IO_PORT "tmds_data_p[1]" IO_TYPE=LVCMOS33D PULL_MODE=NONE DRIVE=8 BANK_VCCIO=3.3;
+IO_LOC  "tmds_data_p[2]" 39,40;
+IO_PORT "tmds_data_p[2]" IO_TYPE=LVCMOS33D PULL_MODE=NONE DRIVE=8 BANK_VCCIO=3.3;
+IO_LOC  "tmds_clk_p" 33,34;
+IO_PORT "tmds_clk_p" IO_TYPE=LVCMOS33D PULL_MODE=NONE DRIVE=8 BANK_VCCIO=3.3;
+
+// ---- zocalo del ESP-01S (J2.1 = pin 75, J2.8 = pin 79) ----
+// Salidas opcionales para transistores (1 = activar la linea); por defecto 0.
+// En la Tang el 75 lleva 10k a masa (y el arranque del BL616) y el 79 lleva
+// 5,1k a masa y el LED WS2812: en reposo se quedan a 0, sin efecto.
+IO_LOC  "ext_a" 75;
+IO_PORT "ext_a" IO_TYPE=LVCMOS33 PULL_MODE=NONE DRIVE=8 BANK_VCCIO=3.3;
+IO_LOC  "ext_b" 79;
+IO_PORT "ext_b" IO_TYPE=LVCMOS33 PULL_MODE=NONE DRIVE=8 BANK_VCCIO=3.3;
+
+// ---- telemetria del motor PCM por el USB de la Tang (BL616), 115200 8N1 ----
+IO_LOC  "dbg_txd" 69;
+IO_PORT "dbg_txd" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
+
+// ---- flash SPI de la Tang (imagen YRW801 en 0x200000) ----
+IO_LOC  "mspi_sclk" 59;
+IO_PORT "mspi_sclk" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
+IO_LOC  "mspi_cs" 60;
+IO_PORT "mspi_cs" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
+IO_LOC  "mspi_mosi" 61;
+IO_PORT "mspi_mosi" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
+IO_LOC  "mspi_miso" 62;
+IO_PORT "mspi_miso" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
+IO_LOC  "mspi_hold" 63;
+IO_PORT "mspi_hold" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;

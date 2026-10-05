@@ -77,7 +77,7 @@ the full licence text is reproduced in each file header — keep it.
 
 MoonTANG modifications to `wt_bus.sv` (originally `board_rev1_bus.sv`): the module
 was renamed `WT200B_BUS` and two dependencies on tnCart's `CONFIG`/`BOARD_ID`
-packages were removed by fixing the board to WonderTANG 2.00b — the `/INT`
+packages were removed by fixing the board to WonderTANG 2.0b / 2.02b — the `/INT`
 inversion takes the non‑101c branch, and the 21.6 MHz clock‑enable tap is fixed to
 `delay_clk[0]` (the non‑IKASCC branch; MoonTANG has no SCC). Both changes are
 marked in the file.
@@ -89,10 +89,32 @@ marked in the file.
 is authoritative for the 2.0b board, cross‑checked against `board_wt200b.cst` from
 tnCartWonder.
 
+MoonTANG modification to `ip_sdram_tangnano20k_c.v`: a `bus_ready` output and a
+`RD_CAPTURE_CLK` parameter that selects the clock edge on which read data is
+captured (the original edge is the default of the module). Both are marked in the
+file.
+
 ## 7. Gowin rPLL IP
 
-`fpga/clocks/pll_main.v`, `pll_eng.v` adapt Gowin Semiconductor's rPLL primitive
-wrappers (vendor IP, conventionally redistributed in Tang Nano projects).
+`fpga/clocks/pll_main.v`, `pll_eng.v`, `pll_hdmi.v` adapt Gowin Semiconductor's rPLL
+primitive wrappers (vendor IP, conventionally redistributed in Tang Nano projects).
+
+## 8. HDMI transmitter — MIT OR Apache‑2.0
+
+`fpga/hdmi/*.sv` are from [hdl‑util/hdmi](https://github.com/hdl-util/hdmi) by
+**Sameer Puri** ("This project is dual‑licensed under MIT and Apache 2.0",
+`SPDX-License-Identifier: MIT OR Apache-2.0`). The copy used here is the one
+carried by the Tang Nano 20K MSX projects, which adds a Gowin `OSER10` branch to
+`serializer.sv` and an `aspect_16_9` input that selects the 4:3 or 16:9 video
+identification code. MoonTANG modification: the redundant redeclaration of the
+`tmds_internal` port in `hdmi.sv` is commented out (marked in the file).
+
+## 9. MSXhdmi_tn20k_smd pinout and bus turnaround
+
+`fpga/constraints/moontang_smd.cst` follows the pinout of **Javier Abadia**'s
+(`jabadiagm`) MSXhdmi / Asgard cartridge, verified against the KiCad PCB of the SMD
+re‑layout. `fpga/src/smd_bus.v` is new code; the timing with which it turns the
+data buffer around follows his Asgard `slave_bus.v`. No code of his is included.
 
 ---
 

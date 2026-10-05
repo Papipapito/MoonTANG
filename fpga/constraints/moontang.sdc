@@ -1,5 +1,5 @@
 // ============================================================================
-// moontang.sdc — restricciones de temporizacion (MoonTANG, WonderTANG 2.00b)
+// moontang.sdc — restricciones de temporizacion (MoonTANG, WonderTANG 2.0b / 2.02b)
 //
 // Auditoria 2026-08-05: sin nombrar los relojes de los PLL, Gowin los derivaba
 // ambos de clk27 y cronometraba clk_eng <-> clk_108m como SINCRONOS contra una
@@ -13,9 +13,9 @@
 create_clock -name clk27 -period 37.037 [get_ports {CLK_27M}]
 
 // ---- salidas de los PLL (nombrarlas para poder agruparlas) ----
-create_clock -name clk_108m -period 9.259 [get_pins {u_pll_main/rpll_inst/CLKOUT}]
-create_clock -name clk_sdram -period 9.259 [get_pins {u_pll_main/rpll_inst/CLKOUTP}]
-create_clock -name clk_54m -period 18.518 [get_pins {u_pll_main/rpll_inst/CLKOUTD}]
+create_clock -name clk_108m -period 9.259 [get_pins {u_wt/u_pll_main/rpll_inst/CLKOUT}]
+create_clock -name clk_sdram -period 9.259 [get_pins {u_wt/u_pll_main/rpll_inst/CLKOUTP}]
+create_clock -name clk_54m -period 18.518 [get_pins {u_wt/u_pll_main/rpll_inst/CLKOUTD}]
 create_clock -name clk_eng -period 26.936 [get_pins {u_pll_eng/rpll_inst/CLKOUT}]
 
 // ---- los dos PLL no guardan relacion de fase entre si ----
@@ -30,14 +30,21 @@ set_clock_groups -asynchronous -group [get_clocks {clk_108m clk_sdram clk_54m}] 
 // cronometrar ese cruce como si fuera sincrono. Se marca como falso camino;
 // el resto de caminos 54<->27 (p.ej. el bus de muestras pcm_out) SI se
 // cronometran, que es lo que se quiere.
-set_false_path -from [get_regs {u_opl4fm/u_opl3/host_if/afifo/wgray*}] -to [get_regs {u_opl4fm/u_opl3/host_if/afifo/wgray_cross*}]
-set_false_path -from [get_regs {u_opl4fm/u_opl3/host_if/afifo/rgray*}] -to [get_regs {u_opl4fm/u_opl3/host_if/afifo/rgray_cross*}]
+set_false_path -from [get_regs {u_wt/u_core/u_opl4fm/u_opl3/host_if/afifo/wgray*}] -to [get_regs {u_wt/u_core/u_opl4fm/u_opl3/host_if/afifo/wgray_cross*}]
+set_false_path -from [get_regs {u_wt/u_core/u_opl4fm/u_opl3/host_if/afifo/rgray*}] -to [get_regs {u_wt/u_core/u_opl4fm/u_opl3/host_if/afifo/rgray_cross*}]
 
 // ---- primera etapa de los sincronizadores 2FF del opl3 ----
 // synchronizer.sv: sync_regs[0] es, por diseño, el registro que ACEPTA entrada
 // metaestable; exigirle hold entre dominios no tiene sentido. Es el mismo caso
 // que la afifo de arriba (aparecio al emparentar clk_27m con clk_54m).
 set_false_path -to [get_regs {*sync_regs[0]*}]
+
+// ---- sincronizador de reset del opl3 (reset_sync.sv) ----
+// r0-r2 se ponen a 1 de forma asincrona con el reset del bus y lo sueltan
+// sincronizado a clk_27m: la comprobacion de "removal" de ese PRESET contra el
+// reloj es justo lo que el sincronizador resuelve (aparecia como 3 endpoints
+// de hold violados sin serlo).
+set_false_path -from [get_regs {u_wt/u_core/rst_sync_2_s0}] -to [get_regs {u_wt/u_core/u_opl4fm/u_opl3/reset_sync/r*}]
 
 // ---- el bus del slot es asincrono y lentisimo (ciclo de I/O ~1 us) ----
 // Ademas cada bit pasa por PIN_FILTER (antirrebote) en el front-end.

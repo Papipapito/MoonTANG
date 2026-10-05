@@ -1,0 +1,106 @@
+Arreglo propuesto para fpga/hdmi/hdmi.sv (copia antigua de hdl-util/hdmi).
+Lo que caza el banco tools/sim/hdmi (run_hdmi.sh) en la copia actual y lo que
+cambia este parche:
+
+ 1. hsync/vsync salen UN PIXEL ANTES que el video (porche delantero de hsync
+    de 15 px y trasero de 61, en vez de 16 y 60): son combinacionales y llevan
+    una etapa de registro menos que "mode". Se registran.
+ 2. vsync empieza UNA LINEA TARDE (porche delantero de 10 lineas y trasero de
+    29, en vez de 9 y 30). Se anade el "- 1" que ya lleva hdl-util/hdmi.
+ 3. Tras la ultima linea activa se envian preambulo y banda de guarda de video
+    sin video detras. Se quitan (igual que en hdl-util/hdmi actual).
+ 4. Entre el video y la isla de datos solo hay 8 caracteres de control (el
+    minimo de HDMI 1.4 es 12, tabla 5-3). La isla se retrasa 4 px (igual que
+    en hdl-util/hdmi actual).
+ 5. tmds_internal estaba declarado dos veces (puerto y linea 364): sv2v y
+    Verilator rechazan el fichero. Se quita la segunda.
+
+Con el parche la prueba ESTRICTA pasa (run_hdmi.sh parche) y la geometria sale
+exacta a CEA-861 tambien en VIC 1, 4 y 17. Lo que arregla son desviaciones del
+estandar: los pixeles y el audio ya llegan bien sin el, y si un televisor
+concreto las tolera o no es algo que la simulacion no puede decir.
+
+Aplicar desde la raiz del repo:   git apply tools/sim/hdmi/hdmi_cea861.patch
+(o: patch -p1 --binary < tools/sim/hdmi/hdmi_cea861.patch)
+
+--- a/fpga/hdmi/hdmi.sv
++++ b/fpga/hdmi/hdmi.sv
+@@ -192,13 +192,18 @@
+     endcase
+ endgenerate
+ 
+-always_comb begin
++// hsync y vsync REGISTRADOS: asi llevan las mismas etapas que el video (cx ->
++// video_data_period -> mode) y el porche delantero de hsync sale de 16 px y no
++// de 15. El pulso de vsync empieza y acaba en el hsync de la linea ANTERIOR
++// (el "- 1"): CEA-861 cuenta el porche delantero desde el hsync que sigue a la
++// ultima linea activa (9 lineas en 480p; sin el "- 1" salen 10).
++always_ff @(posedge clk_pixel) begin
+     hsync <= invert ^ (cx >= screen_width + hsync_pulse_start && cx < screen_width + hsync_pulse_start + hsync_pulse_size);
+     // vsync pulses should begin and end at the start of hsync, so special
+     // handling is required for the lines on which vsync starts and ends
+-    if (cy == screen_height + vsync_pulse_start)
++    if (cy == screen_height + vsync_pulse_start - 1)
+         vsync <= invert ^ (cx >= screen_width + hsync_pulse_start);
+-    else if (cy == screen_height + vsync_pulse_start + vsync_pulse_size)
++    else if (cy == screen_height + vsync_pulse_start + vsync_pulse_size - 1)
+         vsync <= invert ^ (cx < screen_width + hsync_pulse_start);
+     else
+         vsync <= invert ^ (cy >= screen_height + vsync_pulse_start && cy < screen_height + vsync_pulse_start + vsync_pulse_size);
+@@ -258,8 +263,9 @@
+             end
+             else
+             begin
+-                video_guard <= cx >= frame_width - 2 && cx < frame_width && (cy == frame_height - 1 || cy < screen_height);
+-                video_preamble <= cx >= frame_width - 10 && cx < frame_width - 2 && (cy == frame_height - 1 || cy < screen_height);
++                // tras la ultima linea activa no hay video: ni preambulo ni banda de guarda
++                video_guard <= cx >= frame_width - 2 && cx < frame_width && (cy == frame_height - 1 || cy < screen_height - 1);
++                video_preamble <= cx >= frame_width - 10 && cx < frame_width - 2 && (cy == frame_height - 1 || cy < screen_height - 1);
+             end
+         end
+ 
+@@ -268,7 +274,7 @@
+         logic [4:0] num_packets_alongside;
+         always_comb
+         begin
+-            max_num_packets_alongside = ((frame_width - screen_width) /* VD period */ - 2 /* V guard */ - 8 /* V preamble */ - 12 /* 12px control period */ - 2 /* DI guard */ - 2 /* DI start guard */ - 8 /* DI premable */) / 32;
++            max_num_packets_alongside = ((frame_width - screen_width) /* VD period */ - 2 /* V guard */ - 8 /* V preamble */ - 12 /* 12px control period */ - 2 /* DI guard */ - 2 /* DI start guard */ - 8 /* DI premable */ - 4 /* control antes del preambulo de isla */) / 32;
+             if (max_num_packets_alongside > 18)
+                 num_packets_alongside = 5'd18;
+             else
+@@ -276,9 +282,12 @@
+         end
+ 
+         logic data_island_period_instantaneous;
+-        assign data_island_period_instantaneous = num_packets_alongside > 0 && cx >= screen_width + 10 && cx < screen_width + 10 + num_packets_alongside * 32;
++        // La isla empieza 4 px mas tarde (preambulo en +4..+11, guarda en +12..+13,
++        // paquetes desde +14): entre el video y la isla quedan 12 caracteres de
++        // control, el minimo de HDMI 1.4 (tabla 5-3), y no 8.
++        assign data_island_period_instantaneous = num_packets_alongside > 0 && cx >= screen_width + 14 && cx < screen_width + 14 + num_packets_alongside * 32;
+         logic packet_enable;
+-        assign packet_enable = data_island_period_instantaneous && 5'(cx + screen_width + 22) == 5'd0;
++        assign packet_enable = data_island_period_instantaneous && 5'(cx + screen_width + 18) == 5'd0;
+ 
+         logic data_island_guard = 0;
+         logic data_island_preamble = 0;
+@@ -293,8 +302,8 @@
+             end
+             else
+             begin
+-                data_island_guard <= num_packets_alongside > 0 && ((cx >= screen_width + 8 && cx < screen_width + 10) || (cx >= screen_width + 10 + num_packets_alongside * 32 && cx < screen_width + 10 + num_packets_alongside * 32 + 2));
+-                data_island_preamble <= num_packets_alongside > 0 && cx >= screen_width && cx < screen_width + 8;
++                data_island_guard <= num_packets_alongside > 0 && ((cx >= screen_width + 12 && cx < screen_width + 14) || (cx >= screen_width + 14 + num_packets_alongside * 32 && cx < screen_width + 14 + num_packets_alongside * 32 + 2));
++                data_island_preamble <= num_packets_alongside > 0 && cx >= screen_width + 4 && cx < screen_width + 12;
+                 data_island_period <= data_island_period_instantaneous;
+             end
+         end
+@@ -363,7 +372,8 @@
+ // All logic below relates to the production and output of the 10-bit TMDS code.
+ // MoonTANG: redeclaracion del puerto tmds_internal retirada (es redundante con el
+ // puerto ANSI de arriba y sv2v/Icarus la rechazan); la sintesis no cambia.
+-//logic [9:0] tmds_internal [NUM_CHANNELS-1:0] /* verilator public_flat */ ;
++//// (tmds_internal ya esta declarado como puerto: la redeclaracion que habia aqui
++//  la rechazan sv2v y Verilator)
+ genvar i;
+ generate
+     // TMDS code production.

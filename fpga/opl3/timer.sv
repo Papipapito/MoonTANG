@@ -75,15 +75,23 @@ module timer
         .edge_detected(start_timer_set_pulse)
     );
 
-    always_comb tick_pulse = tick_counter == TICK_TIMER_COUNT_VALUE - 1;
+    // MoonTANG (05/10/2026): tick congelado. Si el timer se para (start_timer a 0)
+    // justo cuando tick_counter vale TICK-1, el contador se quedaba quieto en ese
+    // valor y tick_pulse, que no miraba start_timer, seguia a 1 en CADA ciclo: el
+    // timer parado seguia contando a toda velocidad, desbordaba sin parar y los
+    // flags (y /INT) volvian a subir despues de cada ack y de cada /RESET del MSX
+    // (este contador no tiene reset). Ahora el tick exige el timer en marcha y el
+    // contador vuelve a 0 mientras esta parado; al arrancar ya se ponia a 0, asi
+    // que los periodos no cambian (banco: T1 23760 y T2 8640 ciclos, como antes).
+    always_comb tick_pulse = start_timer && (tick_counter == TICK_TIMER_COUNT_VALUE - 1);
 
     always_ff @(posedge clk)
-        if (start_timer) begin
-            if (tick_pulse || start_timer_set_pulse)
-                tick_counter <= 0;
-            else
-                tick_counter <= tick_counter + 1;
-        end
+        if (!start_timer)
+            tick_counter <= 0;
+        else if (tick_pulse || start_timer_set_pulse)
+            tick_counter <= 0;
+        else
+            tick_counter <= tick_counter + 1;
 
     /*
      * Timer gets set to timer_reg upon overflow

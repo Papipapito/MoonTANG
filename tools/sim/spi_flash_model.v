@@ -6,13 +6,20 @@
 // byte de la direccion A vale A[7:0]. Asi cualquier byte duplicado, saltado o
 // desplazado en la copia se detecta en el destino.
 //
+// Opcional: con MEM_SIZE > 0 las direcciones [MEM_BASE, MEM_BASE+MEM_SIZE) salen
+// de la matriz `mem` (que el banco rellena por referencia jerarquica), para
+// poder servir una imagen sintetica de la YRW801; el resto sigue siendo rampa.
+//
 // SPI modo 0: el maestro lanza en flanco de BAJADA y muestrea en el de SUBIDA;
 // el esclavo hace lo simetrico (saca en BAJADA, captura en SUBIDA).
 // ============================================================================
 `timescale 1ns/1ps
 `default_nettype none
 
-module spi_flash_model (
+module spi_flash_model #(
+    parameter [23:0] MEM_BASE = 24'h000000,
+    parameter integer MEM_SIZE = 0
+) (
     input  wire CS,
     input  wire SCLK,
     input  wire MOSI,
@@ -28,6 +35,11 @@ module spi_flash_model (
     reg        miso_r = 1'b0;
 
     assign MISO = CS ? 1'bz : miso_r;
+
+    reg [7:0] mem [0:(MEM_SIZE > 0 ? MEM_SIZE : 1) - 1];
+    wire [23:0] moff = cur - MEM_BASE;
+    wire        in_mem = (MEM_SIZE > 0) && (cur >= MEM_BASE) && (moff < MEM_SIZE);
+    wire [7:0]  cur_byte = in_mem ? mem[moff] : cur[7:0];
 
     always @(posedge CS) begin
         bitcnt <= 6'd0;
@@ -55,9 +67,9 @@ module spi_flash_model (
     always @(negedge SCLK) begin
         if (!CS && phase) begin
             if (dbit == 3'd0) begin
-                // byte nuevo: la RAMPA vale addr[7:0]
-                miso_r <= cur[7];
-                osr    <= {cur[6:0], 1'b0};
+                // byte nuevo: imagen en memoria o RAMPA (addr[7:0])
+                miso_r <= cur_byte[7];
+                osr    <= {cur_byte[6:0], 1'b0};
                 cur    <= cur + 24'd1;
             end
             else begin

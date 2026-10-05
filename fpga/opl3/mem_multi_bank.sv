@@ -47,6 +47,7 @@ module mem_multi_bank #(
     parameter OUTPUT_DELAY = 0, // 0, 1, or 2
     parameter DEFAULT_VALUE = 0,
     parameter NUM_BANKS = 0,
+    parameter USE_BRAM = 0,     // era v3: 1 = bancos en BSRAM (solo delay>=1)
     parameter BANK_WIDTH = $clog2(NUM_BANKS)
 ) (
     input wire clk,
@@ -75,6 +76,41 @@ module mem_multi_bank #(
     );
 
     generate
+    if (USE_BRAM) begin: fused
+        // era v3 (dieta OPL3): UN SOLO BSRAM para los NUM_BANKS bancos,
+        // direccionado por {bank, addr}. El banco no es mas que un bit de
+        // direccion, asi que la semantica es identica a la version de un
+        // primitivo por banco — pero ahorra la mitad de los bloques (el
+        // limite del GW5AT-60B son 118 y estabamos en 117) y ademas quita
+        // el mux de salida por banco (bankb_p ya no hace falta).
+        // Profundidad EXACTA (banco*DEPTH + addr), no {banco,addr}: con un
+        // DATA_WIDTH>18 el modulo deja los bits altos en FF, y redondear a
+        // potencia de dos los duplicaria sin ganar nada. Con NUM_BANKS=2 el
+        // "producto" es una suma de constante.
+        localparam FUSED_DEPTH = NUM_BANKS * DEPTH;
+
+        logic [$clog2(FUSED_DEPTH)-1:0] addra_f, addrb_f;
+
+        always_comb addra_f = banka * DEPTH + addra;
+        always_comb addrb_f = bankb * DEPTH + addrb;
+
+        mem_simple_dual_port_bram #(
+            .DATA_WIDTH(DATA_WIDTH),
+            .DEPTH(FUSED_DEPTH),
+            .OUTPUT_DELAY(OUTPUT_DELAY),
+            .DEFAULT_VALUE(DEFAULT_VALUE)
+        ) mem_fused (
+            .clka(clk),
+            .clkb(clk),
+            .wea,
+            .reb,
+            .addra(addra_f),
+            .addrb(addrb_f),
+            .dia,
+            .dob
+        );
+    end
+    else begin: perbank
     genvar i;
     for (i = 0; i < NUM_BANKS; ++i) begin: bankgen
         always_comb wea_array[i] = wea && banka == i;
@@ -119,6 +155,7 @@ module mem_multi_bank #(
         always_comb dob = dob_array[bankb];
     else
         always_comb dob = dob_array[bankb_p[OUTPUT_DELAY]];
+    end
     endgenerate
 endmodule
 `default_nettype wire

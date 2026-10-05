@@ -43,6 +43,10 @@ module opl4fm (
     output wire [7:0]  dout,         // dato C4-C7 (status/shadow)
     output wire [7:0]  wave_dout,    // dato 7Fh (stub 0x20)
     output reg signed [15:0] pcm_out, // al mixer (registrado, dominio host)
+    // 23/09/2026 (MSXimus Z): estereo real del OPL3 (bits L/R de C0-C8), cada lado a nivel nativo: un canal
+    // con L y R vale en cada lado lo mismo que en pcm_out (mono = (L+R)/2)
+    output reg signed [15:0] pcm_out_l,
+    output reg signed [15:0] pcm_out_r,
     output wire        int_n         // _108: IRQ del timer OPL4 (dominio host,
                                      // 2FF; VGMPlay/MBWave la NECESITAN: su
                                      // play va del Timer1 a 1130Hz por IRQ)
@@ -77,8 +81,17 @@ assign wave_dout = 8'h20;            // device ID del YMF278B (deteccion)
 // ---------------------------------------------------------------------------
 // shadow register file (read-back que el core no tiene)
 // ---------------------------------------------------------------------------
-reg [7:0] shadow_b0 [0:255];
-reg [7:0] shadow_b1 [0:255];
+// ERA v3 (sin SSRAM): las shadows van a BSRAM con lectura SINCRONA.
+// Como FF eran 4.096 registros + dos muxes 256:1 — el bocado que faltaba
+// para colocar la build completa (v3b002: 2.9-4.3K REG unPlaced). El ciclo
+// extra de la lectura registrada es invisible: sel_reg_* cambia con la
+// escritura de seleccion, MUCHOS ciclos de clk_host antes de que el Z80
+// muestree el dato del readback (una I/O read son ~15 ciclos de 54MHz).
+// v3b010+: los DOS bancos comparten UNA BSRAM 512x8 (bit alto = banco):
+// el Z80 solo puede leer un banco a la vez (C5 o C7) y solo escribe uno
+// por ciclo de bus (strobes we0/we1 excluyentes por addr_r[1:0]).
+(* syn_ramstyle = "block_ram" *) reg [7:0] shadow [0:511];
+reg [7:0] sh_q;
 reg [7:0] sel_reg_b0;
 reg [7:0] sel_reg_b1;
 
@@ -97,12 +110,33 @@ always @(posedge clk_host or negedge rst_n) begin
         if (wr_strobe) begin
             case (addr_r[1:0])
                 2'b00: sel_reg_b0 <= din_r;
-                2'b01: shadow_b0[sel_reg_b0] <= din_r;
                 2'b10: sel_reg_b1 <= din_r;
-                2'b11: shadow_b1[sel_reg_b1] <= din_r;
+                default: ;
             endcase
         end
     end
+end
+
+// _121diag: media etapa NEGEDGE en las escrituras de las shadow — misma
+// clase de hold que pww->pw_mem en el shim (registro->AD de BSRAM
+// demasiado corto, -0.02): dato/indice/enable se recapturan a contraflanco
+// y la BSRAM los ve estables medio ciclo a cada lado. La escritura aterriza
+// 1 ciclo despues: irrelevante (las lecturas de shadow van a ritmo de CPU).
+reg       shw_we0_n, shw_we1_n;
+reg [7:0] shw_idx0_n, shw_idx1_n, shw_dat_n;
+always @(negedge clk_host) begin
+    shw_we0_n  <= wr_strobe && (addr_r[1:0] == 2'b01);
+    shw_we1_n  <= wr_strobe && (addr_r[1:0] == 2'b11);
+    shw_idx0_n <= sel_reg_b0;
+    shw_idx1_n <= sel_reg_b1;
+    shw_dat_n  <= din_r;
+end
+wire       sh_we    = shw_we0_n | shw_we1_n;
+wire [8:0] sh_waddr = shw_we1_n ? {1'b1, shw_idx1_n} : {1'b0, shw_idx0_n};
+wire [8:0] sh_raddr = addr_r[1] ? {1'b1, sel_reg_b1} : {1'b0, sel_reg_b0};
+always @(posedge clk_host) begin
+    if (sh_we) shadow[sh_waddr] <= shw_dat_n;
+    sh_q <= shadow[sh_raddr];           // era v3: lectura registrada (BSRAM)
 end
 
 // mux de lectura: status del core en C4/C6, registro shadow en C5/C7.
@@ -110,8 +144,7 @@ end
 // con los del wave (bit1=LD, bit0=BUSY) — se ORean los del motor PCM.
 wire [7:0] opl3_dout;
 assign dout = (addr_r[0] == 1'b0) ? (opl3_dout | {6'b000000, wave_status}) : // C4/C6
-              (addr_r[1] == 1'b0) ? shadow_b0[sel_reg_b0] :   // C5: bank 0
-                                    shadow_b1[sel_reg_b1];    // C7: bank 1
+                                    sh_q;      // C5/C7: shadow (BSRAM unica)
 
 // ---------------------------------------------------------------------------
 // core OPL3 (fork mangOPL4; FIFO async interna clk_host->clk_opl3)
@@ -175,10 +208,35 @@ always @(posedge clk_opl3) begin
     else     pcm_opl3 <= mono_n[15:0];
 end
 
+// 23/09/2026: los dos lados, >>5 como el mono (nivel nativo) y el mismo clamp de guarda
+reg signed [24:0] l_q, r_q;
+always @(posedge clk_opl3) begin
+    l_q <= sample_l_ext;
+    r_q <= sample_r_ext;
+end
+wire signed [19:0] l_n = l_q[24:5];
+wire signed [19:0] r_n = r_q[24:5];
+wire ovf_l = (l_n[19:15] != {5{l_n[19]}});
+wire ovf_r = (r_n[19:15] != {5{r_n[19]}});
+reg signed [15:0] pcm_opl3_l, pcm_opl3_r;
+always @(posedge clk_opl3) begin
+    if (ovf_l) pcm_opl3_l <= l_n[19] ? 16'sh8000 : 16'sh7FFF;
+    else       pcm_opl3_l <= l_n[15:0];
+    if (ovf_r) pcm_opl3_r <= r_n[19] ? 16'sh8000 : 16'sh7FFF;
+    else       pcm_opl3_r <= r_n[15:0];
+end
+
 // cruce a dominio host por registro simple (audio a 49.5kHz: sobra)
 always @(posedge clk_host or negedge rst_n) begin
-    if (!rst_n) pcm_out <= 16'sd0;
-    else        pcm_out <= pcm_opl3;
+    if (!rst_n) begin
+        pcm_out   <= 16'sd0;
+        pcm_out_l <= 16'sd0;
+        pcm_out_r <= 16'sd0;
+    end else begin
+        pcm_out   <= pcm_opl3;
+        pcm_out_l <= pcm_opl3_l;
+        pcm_out_r <= pcm_opl3_r;
+    end
 end
 
 endmodule

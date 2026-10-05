@@ -19,6 +19,13 @@
 //   valido. Ademas `terminate` se mantiene a NIVEL, no en pulso: flash_rw solo
 //   lo muestrea en STATE_WAIT_NEXT y un pulso de 1 ciclo se pierde.
 //
+// SUMA DE COMPROBACION (05/10/2026): se suman los bytes copiados y al acabar se
+// comparan con la suma de la YRW801 de verdad (EXPECTED_SUM). Si no coincide,
+// wl_sum_ok queda a 0 y la pantalla y el LED lo dicen: una flash en blanco (todo
+// FF), una megaROM que dejo otro firmware en 0x200000 o una imagen incompleta
+// suenan a basura o no suenan, y sin esto la carga parecia correcta. NO bloquea:
+// wl_done sube igual y el FM funciona.
+//
 // WATCHDOG: si la flash o la SDRAM se atascan, se reintenta la copia entera
 // hasta MAX_RETRIES y despues se sale con wl_error pegajoso — pero wl_done
 // SIEMPRE acaba subiendo, para no dejar el motor en reset y la placa muda sin
@@ -30,7 +37,10 @@ module yrw801_loader #(
     parameter [23:0] FLASH_BASE  = 24'h200000,  // offset del YRW801 en la flash
     parameter [22:0] WAVE_SIZE   = 23'h200000,  // 2 MB
     parameter integer TIMEOUT    = 24'd8000000, // ~148 ms @54 MHz
-    parameter integer MAX_RETRIES = 3
+    parameter integer MAX_RETRIES = 3,
+    // suma de los 2 MB de la YRW801 (md5 42af93619160...): 270522894 = 101FDA0Eh.
+    // Los bancos de pruebas, que copian 4 KB sinteticos, la cambian con defparam.
+    parameter [31:0] EXPECTED_SUM = 32'h101FDA0E
 ) (
     input  wire        clk,          // clk_host (54 MHz)
     input  wire        rst_n,
@@ -54,6 +64,7 @@ module yrw801_loader #(
     // ---- estado ----
     output reg         wl_done,      // 1 = liberado el motor PCM
     output reg         wl_error,     // 1 = se agotaron los reintentos
+    output reg         wl_sum_ok,    // 1 = la imagen copiada es la YRW801 (suma)
     output wire [2:0]  wl_dbg_state
 );
     localparam [2:0] S_WAIT   = 3'd0,  // espera a flash lista + start
@@ -71,6 +82,7 @@ module yrw801_loader #(
     reg [15:0] warm;                   // margen tras power-on de la flash
     reg [23:0] wdog;                   // watchdog de estado
     reg [1:0]  retries;
+    reg [31:0] sum;                    // suma de los bytes copiados
 
     assign wl_dbg_state = st;
 
@@ -83,7 +95,7 @@ module yrw801_loader #(
             st <= S_WAIT; st_d <= S_WAIT;
             flash_addr <= FLASH_BASE; flash_rd <= 1'b0; flash_terminate <= 1'b0;
             wl_req_toggle <= 1'b0; wl_we <= 1'b0; wl_addr <= 22'd0; wl_wdata <= 8'd0;
-            wl_done <= 1'b0; wl_error <= 1'b0;
+            wl_done <= 1'b0; wl_error <= 1'b0; wl_sum_ok <= 1'b0; sum <= 32'd0;
             cnt <= 23'd0; byte_r <= 8'd0; done_seen <= 1'b0;
             warm <= 16'd0; wdog <= 24'd0; retries <= 2'd0;
         end
@@ -114,6 +126,7 @@ module yrw801_loader #(
                     flash_terminate <= 1'b0;
                     flash_addr <= FLASH_BASE;
                     cnt        <= 23'd0;
+                    sum        <= 32'd0;
                     if (start && !flash_busy) begin
                         if (warm[15]) st <= S_RDISS;
                         else          warm <= warm + 16'd1;
@@ -131,6 +144,7 @@ module yrw801_loader #(
                 //  ...y luego BAJA: ahi flash_dout es el byte NUEVO
                 S_RDWAIT: if (!flash_busy) begin
                     byte_r <= flash_dout;
+                    sum    <= sum + {24'd0, flash_dout};
                     st <= S_WRISS;
                 end
                 // --------------------------------------------------------
@@ -146,6 +160,7 @@ module yrw801_loader #(
                 S_WRWAIT: if (wl_done_toggle != done_seen) begin
                     if (cnt + 23'd1 >= WAVE_SIZE) begin
                         flash_terminate <= 1'b1;    // NIVEL, no pulso
+                        wl_sum_ok <= (sum == EXPECTED_SUM);
                         st <= S_DONE;
                     end
                     else begin

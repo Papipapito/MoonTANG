@@ -26,3 +26,7 @@ fpga/test_1912/
 fpga/build_wt_*.log
 tools/sim/*.vcd
 ruvector.db
+
+# simulation build products (generated Verilog, compiled benches, logs, frames)
+tools/sim/build/
+tools/sim/**/build/

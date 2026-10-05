@@ -1,5 +1,5 @@
 // ============================================================================
-//  moontang.cst — MoonTANG sobre cartucho WonderTANG 2.00b
+//  moontang.cst — MoonTANG sobre cartucho WonderTANG 2.0b / 2.02b
 //                 Tang Nano 20K · GW2AR-LV18QN88C8/I7
 // ----------------------------------------------------------------------------
 //  Pinout COPIADO del top.cst oficial de lfantoniosi/WonderTANG (BSD-2), que es
@@ -15,7 +15,20 @@
 //
 //  Correspondencia con los nombres del repo oficial:
 //    CART_DATA_SIG[7:0] = cd[7:0]      CART_MUX_SIG[7:0] = mp[7:0]
-//    CART_MUX_CS_n[2:0] = msel_n[2:0]  CART_DATA_DIR     = datadir
+//    CART_MUX_CS_n[2]=msel_n[2]  CART_MUX_CS_n[1]=msel_n[0]  CART_MUX_CS_n[0]=msel_n[1]
+//    CART_DATA_DIR = datadir
+//
+//  OJO, msel CRUZADO A PROPOSITO. En la placa (firmware oficial, top.v):
+//      msel_n[0] (pin 17) a 0 -> mp = A0-A7
+//      msel_n[1] (pin 20) a 0 -> mp = A8-A15
+//      msel_n[2] (pin 19) a 0 -> mp = control (MERQ, IORQ, CS1, CS2, RESET, RFSH, CS12, M1)
+//  El front-end de tnCart numera sus grupos AL REVES (su grupo 0 = A8-A15, su
+//  grupo 1 = A0-A7; el propio README de tnCart lo avisa: "MSEL0 y MSEL1 parecen
+//  estar al reves"), y herraa1 lo compensa en board_wt200b.cst cruzando los
+//  pines. La primera version de este fichero (05/08/2026) asigno por NOMBRE
+//  (CS_n[0]=17, CS_n[1]=20) y con eso el cartucho decodificaba A8-A15 como si
+//  fuera el numero de puerto: no habria respondido en C4h-C7h ni 7Eh-7Fh.
+//  Lo vigila tools/sim/tb_bus (modelo de placa por numero de pin).
 //    DAC_DIN = hp_din   DAC_BCLK = hp_bck   DAC_LRCLK = hp_ws
 //    DAC_SDMODE_n = pa_en (habilitacion del amplificador)
 // ============================================================================
@@ -63,9 +76,9 @@ IO_PORT "CART_MUX_SIG[0]" IO_TYPE=LVCMOS33 PULL_MODE=UP BANK_VCCIO=3.3;
 // ---- seleccion de grupo del multiplexor ----
 IO_LOC  "CART_MUX_CS_n[2]" 19;
 IO_PORT "CART_MUX_CS_n[2]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
-IO_LOC  "CART_MUX_CS_n[1]" 20;
+IO_LOC  "CART_MUX_CS_n[1]" 17;
 IO_PORT "CART_MUX_CS_n[1]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
-IO_LOC  "CART_MUX_CS_n[0]" 17;
+IO_LOC  "CART_MUX_CS_n[0]" 20;
 IO_PORT "CART_MUX_CS_n[0]" IO_TYPE=LVCMOS33 PULL_MODE=UP DRIVE=8 BANK_VCCIO=3.3;
 
 // ---- direccion del transceptor de datos ----

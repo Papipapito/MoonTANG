@@ -1,10 +1,13 @@
 // ============================================================================
 // tb_i2s.v — verifica el camino de audio I2S de MoonTANG.
 //
-// LO QUE VERIFICA: la fase del mux estereo del top,
-//     i2s_sample <= dac_lrclk_w ? sampL : sampR;
-// deducida leyendo el RTL de I2S_AUDIO_TX. Si estuviera invertida, el cartucho
-// sacaria los canales cambiados — un fallo caro de ver en placa.
+// LO QUE VERIFICA, con los modulos REALES (i2s_feed + I2S_AUDIO_TX):
+//   1. que cada canal sale en su trama (LRCLK=0 -> izquierdo). Si la fase de
+//      i2s_feed estuviera invertida el cartucho sacaria los canales cambiados.
+//   2. que la muestra que carga el transmisor lleva QUIETA mucho antes del
+//      instante de carga: i2s_feed la cambia justo despues del flanco de LRCLK
+//      y no la vuelve a tocar (es lo que hace seguro el cruce de 54 MHz a
+//      clk_dac sin sincronizar el bus entero).
 //
 // METODO (el que funciono en tb_diag): capturar LRCLK y DIN en el MISMO flanco
 // de BCLK, localizar los flancos de LRCLK y deserializar los 16 bits que
@@ -15,19 +18,27 @@
 
 module tb_i2s;
 
-    reg clk_dac = 0, rst_n = 0;
-    always #100 clk_dac = ~clk_dac;
+    reg clk_dac = 0, clk_54m = 0, rst_n = 0;
+    always #324.07 clk_dac = ~clk_dac;      // 1,5429 MHz como en la placa
+    always #9.26   clk_54m = ~clk_54m;      // 54 MHz (sin relacion de fase)
 
     reg signed [15:0] sampL, sampR;
 
-    // --- el bloque EXACTO del top de MoonTANG ---
+    // --- los modulos del top de MoonTANG ---
     wire dac_lrclk_w, dac_din, dac_bclk;
-    reg signed [15:0] i2s_sample;
-    always @(posedge clk_dac) i2s_sample <= dac_lrclk_w ? sampL : sampR;
+    wire signed [15:0] i2s_sample;
+    i2s_feed u_feed (.clk(clk_54m), .lrclk(dac_lrclk_w),
+                     .samp_l(sampL), .samp_r(sampR), .sample(i2s_sample));
 
     I2S_AUDIO_TX #(.SAMPLE_WIDTH(16)) dut (
         .CLK_DAC(clk_dac), .RESET_n(rst_n), .SAMPLE_IN(i2s_sample),
         .REQ(), .DAC_BCLK(dac_bclk), .DAC_LRCLK(dac_lrclk_w), .DAC_DIN(dac_din));
+
+    // --- la muestra debe llevar quieta >= 5 us cuando LRCLK conmuta (= carga) ---
+    realtime t_chg = 0;
+    integer  unstable = 0;
+    always @(i2s_sample) t_chg = $realtime;
+    always @(dac_lrclk_w) if (rst_n && $realtime > 100000 && ($realtime - t_chg) < 5000.0) unstable = unstable + 1;
 
     integer errors = 0;
     integer checks = 0;
@@ -86,15 +97,20 @@ module tb_i2s;
         sampL = 16'h5555; sampR = 16'hAAAA; repeat(80) @(posedge clk_dac); check(16'h5555, 16'hAAAA);
 
         $display("== %0d comprobaciones, %0d errores ==", checks, errors);
+        if (unstable != 0) begin
+            $display("  [FAIL] la muestra cambio %0d veces cerca del instante de carga", unstable);
+            errors = errors + 1;
+        end
+        else $display("  [ok]   la muestra lleva quieta >= 5 us en cada carga del transmisor");
         if (errors == 0)
-            $display("RESULTADO: PASS - canales en su sitio y sin desplazamiento de bit");
+            $display("RESULTADO: PASS - canales en su sitio, sin desplazamiento de bit y sin cruce en transito");
         else
             $display("RESULTADO: FAIL");
         $finish;
     end
 
     initial begin
-        #50_000_000;
+        #200_000_000;
         $display("RESULTADO: FAIL (timeout)");
         $finish;
     end

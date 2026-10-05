@@ -17,27 +17,36 @@ license. Per‑file headers are authoritative; keep them intact.
 | Wave→SDRAM bridge | `fpga/src/wv_to_sdram.v` | Papipapito (Albert, with Claude) | GPL‑3.0 |
 | **MSX slot bus front‑end** (multiplexed) | `fpga/wondertang/bus.sv`, `fpga/wondertang/wt_bus.sv` | **Shinobu Hashimoto** (`buppu3`) — *tnCart*; port by **Albert Herranz** (`herraa1`) — *tnCartWonder* | BSD‑3‑Clause |
 | **I2S transmitter** | `fpga/wondertang/i2s_audio_tx.sv` | **Albert Herranz** (`herraa1`) | BSD‑3‑Clause |
-| **Board pinout (WonderTANG 2.0b)** | `fpga/constraints/moontang.cst` | derived from **lfantoniosi** *WonderTANG* `fpga/src/top.cst` + `board_wt200b.cst` (herraa1) | BSD‑2 / BSD‑3 |
+| **Board pinout (WonderTANG 2.0b / 2.02b)** | `fpga/constraints/moontang.cst`, `moontang_wt_hdmi.cst` | derived from **lfantoniosi** *WonderTANG* `fpga/src/top.cst` + `board_wt200b.cst` (herraa1) | BSD‑2 / BSD‑3 |
+| **HDMI transmitter with audio** | `fpga/hdmi/*.sv` | **Sameer Puri** — *hdl‑util/hdmi*; Gowin OSER10 serializer branch and `aspect_16_9` input as carried in the Tang Nano 20K MSX projects | MIT OR Apache‑2.0 |
+| **Board pinout (MSXhdmi_tn20k_smd)** | `fpga/constraints/moontang_smd.cst` | pinout of **Javier Abadia**'s (`jabadiagm`) MSXhdmi / Asgard cartridge, checked against the KiCad PCB of the SMD board | — |
+| Direct bus front‑end (HDMI board) | `fpga/src/smd_bus.v` | Papipapito (Albert, with Claude); data‑buffer turnaround timing after jabadiagm's Asgard `slave_bus.v` | GPL‑3.0 |
+| VU meter and screen | `fpga/src/vu_meter.v`, `vu_screen.v`, `font8x8.v` | Papipapito (Albert, with Claude); the 8x8 font is the clean‑room one from SlotDoctor | GPL‑3.0 |
+| I2S sample hand‑off | `fpga/src/i2s_feed.v` | Papipapito (Albert, with Claude) | GPL‑3.0 |
 | SPI flash reader | `fpga/src/flash_rw.v` | Papipapito project | GPL‑3.0 |
 | YRW801 loader | `fpga/src/yrw801_loader.v` | Papipapito (Albert, with Claude) | GPL‑3.0 |
-| Cartridge top | `fpga/src/moontang_top.sv` | Papipapito (Albert, with Claude) | GPL‑3.0 |
-| rPLL IP | `fpga/clocks/pll_main.v`, `pll_eng.v` | **Gowin Semiconductor** (tool IP, adapted) | vendor IP |
+| MoonSound core, board shells and tops | `fpga/src/moontang_core.sv`, `moontang_wt_shell.sv`, `moontang_top.sv`, `moontang_wt_hdmi_top.sv`, `moontang_smd_top.sv`, `moontang_av.sv` | Papipapito (Albert, with Claude) | GPL‑3.0 |
+| rPLL IP | `fpga/clocks/pll_main.v`, `pll_eng.v`, `pll_hdmi.v` | **Gowin Semiconductor** (tool IP, adapted) | vendor IP |
 
 ## Hardware / carrier
 
-- **luca / lfantoniosi** — the **WonderTANG 2.0b** cartridge this targets, and the
+- **luca / lfantoniosi** — the **WonderTANG 2.0b / 2.02b** cartridge, and the
   authoritative `top.cst` pinout (BSD‑2). Note its KiCad netlist is stale (it still
   describes a Tang Nano 9K with a non‑multiplexed address bus) — `top.cst` and the
   schematic are the sources of truth.
 - **Shinobu Hashimoto** (`buppu3`) and **Albert Herranz** (`herraa1`) — tnCart /
   tnCartWonder, including the `wt200b` board definition for this exact revision.
+- **Javier Abadia** (`jabadiagm`) — the MSXhdmi / Asgard cartridge for the Tang
+  Nano 20K. The HDMI variant runs on an SMD re‑layout of that board and follows the
+  way his firmware turns the data buffer around.
 - **Takayuki Hara** (hra1129) — the `ip_sdram` controller from the V9968 Cartridge.
 - **Sipeed** — the Tang Nano 20K.
 
 ## Co‑authorship
 
-This standalone port — the cartridge top, clocking, the SDRAM bridge, the YRW801
-loader, the audio mixer, the constraints and the testbenches — was done by
+This standalone port — the core and board tops, clocking, the SDRAM bridge, the
+YRW801 loader, the audio mixer, the VU meter, the constraints and the testbenches —
+was done by
 **Albert (Papipapito)** in pair‑programming with **Claude (Anthropic)**, who is
 credited as co‑author in the commit history (`Co-Authored-By` trailers).
 

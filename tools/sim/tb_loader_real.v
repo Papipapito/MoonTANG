@@ -37,11 +37,15 @@ module tb_loader_real;
     wire [21:0] wl_addr;
     wire [7:0]  wl_wdata;
     reg         wl_done_toggle = 0;
-    wire        wl_done, wl_error;
+    wire        wl_done, wl_error, wl_sum_ok;
+    // suma de la rampa de 512 bytes desde 0x200000: dos veces 0..255 = FF00h
+    // (+SUM_DELTA para el control negativo: con otra suma esperada, sum_ok = 0)
+    parameter [31:0] SUM_DELTA = 32'd0;
 
     yrw801_loader #(
         .FLASH_BASE(TEST_BASE), .WAVE_SIZE(TEST_SIZE),
-        .TIMEOUT(24'd3000000), .MAX_RETRIES(3)
+        .TIMEOUT(24'd3000000), .MAX_RETRIES(3),
+        .EXPECTED_SUM(32'h0000FF00 + SUM_DELTA)
     ) u_loader (
         .clk(clk), .rst_n(rst_n), .start(start),
         .flash_addr(fl_addr), .flash_rd(fl_rd), .flash_dout(fl_dout),
@@ -49,7 +53,7 @@ module tb_loader_real;
         .flash_terminate(fl_terminate),
         .wl_req_toggle(wl_req_toggle), .wl_we(wl_we), .wl_addr(wl_addr),
         .wl_wdata(wl_wdata), .wl_done_toggle(wl_done_toggle),
-        .wl_done(wl_done), .wl_error(wl_error), .wl_dbg_state()
+        .wl_done(wl_done), .wl_error(wl_error), .wl_sum_ok(wl_sum_ok), .wl_dbg_state()
     );
 
     // flash_rw REAL (STARTUP_WAIT reducido para no eternizar la sim)
@@ -130,9 +134,10 @@ module tb_loader_real;
             end
         end
 
-        $display("  escrituras=%0d/%0d  saltos=%0d  duplicados=%0d  contenido_mal=%0d  wl_error=%b",
-                 writes, TEST_SIZE, seq_err, dup_err, data_err, wl_error);
-        if (writes == TEST_SIZE && seq_err == 0 && dup_err == 0 && data_err == 0 && !wl_error)
+        $display("  escrituras=%0d/%0d  saltos=%0d  duplicados=%0d  contenido_mal=%0d  wl_error=%b  suma_ok=%b",
+                 writes, TEST_SIZE, seq_err, dup_err, data_err, wl_error, wl_sum_ok);
+        if (writes == TEST_SIZE && seq_err == 0 && dup_err == 0 && data_err == 0 && !wl_error
+            && wl_sum_ok === (SUM_DELTA == 0))
             $display("RESULTADO: PASS - copia integra contra el flash_rw real");
         else
             $display("RESULTADO: FAIL");

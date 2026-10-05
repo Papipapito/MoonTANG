@@ -1,0 +1,4 @@
+# productos de run_vu.sh y de syn_check/run_syn.sh (los PNG de out/ si se guardan)
+build/
+syn_check/impl/
+syn_check/syn.log

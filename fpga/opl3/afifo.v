@@ -812,3 +812,5 @@ module afifo #(
 `endif
 // }}}
 endmodule
+
+`default_nettype wire   // restaurar: el `none` de arriba se filtraba a los ficheros siguientes (Vivado)

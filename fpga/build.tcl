@@ -1,6 +1,7 @@
 # ============================================================================
 #  build.tcl — MoonTANG (OPL4/MoonSound) · Tang Nano 20K · GW2AR-LV18QN88C8/I7
-#  Uso: cd fpga && gw_sh build.tcl
+#              WonderTANG 2.0b / 2.02b SIN HDMI (sonido solo al MSX)
+#  Uso: cd fpga && gw_sh build.tcl          -> impl/pnr/moontang_wt.fs
 # ============================================================================
 set_device -name GW2AR-18C GW2AR-LV18QN88C8/I7
 
@@ -23,6 +24,7 @@ add_file opl3/mem_multi_bank.sv
 add_file opl3/mem_multi_bank_reset.sv
 add_file opl3/mem_simple_dual_port.sv
 add_file opl3/mem_simple_dual_port_async_read.sv
+add_file opl3/mem_simple_dual_port_bram.sv
 add_file opl3/operator.sv
 add_file opl3/opl3.sv
 add_file opl3/opl3_exp_lut.sv
@@ -51,16 +53,19 @@ add_file src/ip_sdram_tangnano20k_c.v
 add_file src/yrw801_loader.v
 add_file src/flash_rw.v
 
-# ----- front-end de bus WonderTANG 2.00b + I2S (tnCart, BSD-3) -----
+# ----- front-end de bus WonderTANG 2.0b/2.02b + I2S (tnCart, BSD-3) -----
 add_file wondertang/bus.sv
 add_file wondertang/wt_bus.sv
 add_file wondertang/i2s_audio_tx.sv
+add_file src/i2s_feed.v
 
 # ----- relojes (rPLL GW2A) -----
 add_file clocks/pll_main.v
 add_file clocks/pll_eng.v
 
 # ----- top -----
+add_file src/moontang_core.sv
+add_file src/moontang_wt_shell.sv
 add_file src/moontang_top.sv
 
 # ----- constraints -----
@@ -75,6 +80,7 @@ add_file constraints/moontang.sdc
 #   WonderTANG). NADA de jtag/cpu/done/ready.
 set_option -use_mspi_as_gpio 1 -use_sspi_as_gpio 1
 set_option -top_module moontang_top -verilog_std sysv2017 -include_path src
+set_option -output_base_name moontang_wt
 set_option -place_option 2
 set_option -route_option 1
 
