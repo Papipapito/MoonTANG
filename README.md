@@ -1,5 +1,58 @@
 # MoonTANG 🌙
 
+![MoonTANG 1.0 beta — overview](docs/img/moontang-1.0beta-overview.png)
+
+> **Español.** MoonTANG es un cartucho MoonSound / MSX-Audio experimental para
+> MSX basado en una Tang Nano 20K. Añade OPL4, muestras PCM, HDMI opcional y,
+> según la versión, MSX-Audio.
+>
+> **English.** MoonTANG is an experimental MoonSound / MSX-Audio cartridge for
+> MSX based on a Tang Nano 20K. It adds OPL4, PCM samples, optional HDMI and,
+> depending on the build, MSX-Audio.
+
+## ⚠️ BETA — use at your own risk / úsalo bajo tu responsabilidad
+
+> **Español — aviso importante.** MoonTANG es hardware y firmware **beta y
+> experimental**. Puede contener errores, producir comportamientos inesperados o
+> no funcionar con tu equipo. Al cargar un bitstream o conectar el cartucho,
+> aceptas el riesgo: los autores y colaboradores no se responsabilizan de daños,
+> pérdidas de datos ni averías en el MSX, la WonderTANG, la Tang Nano, la fuente
+> de alimentación o cualquier otro equipo. Prueba primero en SRAM, con el MSX
+> apagado al conectar, y verifica siempre la alimentación y J3.
+>
+> **English — important notice.** MoonTANG is **beta, experimental** hardware
+> and firmware. It may contain bugs, behave unexpectedly or fail to work with
+> your equipment. By loading a bitstream or connecting the cartridge, you accept
+> the risk: the authors and contributors accept no liability for damage, data
+> loss or failure affecting the MSX, WonderTANG, Tang Nano, power supply or any
+> other equipment. Test in SRAM first, connect it with the MSX powered off, and
+> verify power and J3 before use.
+
+## 1.0 beta: three WonderTANG versions / tres versiones WonderTANG
+
+All three builds are for the **WonderTANG 2.02b only**.
+
+| Bitstream | English | Español |
+|---|---|---|
+| [`moontang_wondertang202b_hdmi_1.0beta.fs`](bitstream/moontang_wondertang202b_hdmi_1.0beta.fs) | **OPL4 + HDMI.** MoonSound, stereo HDMI audio/video and mono sound into the MSX through `SOUNDIN`. Use this when you already own a real MSX-Audio. | **OPL4 + HDMI.** MoonSound, vídeo y audio HDMI estéreo y sonido mono hacia el MSX por `SOUNDIN`. Úsala si ya tienes un MSX-Audio real. |
+| [`moontang_wondertang202b_hdmi_msxaudio_1.0beta.fs`](bitstream/moontang_wondertang202b_hdmi_msxaudio_1.0beta.fs) | **OPL4 + MSX-Audio + HDMI.** Everything together: MoonSound, Y8950 MSX-Audio and HDMI. It is the largest build (91 % CLS); test it in SRAM first. | **OPL4 + MSX-Audio + HDMI.** Todo junto: MoonSound, MSX-Audio Y8950 y HDMI. Es la versión más grande (91 % CLS); pruébala primero en SRAM. |
+| [`moontang_wondertang202b_msxaudio_1.0beta.fs`](bitstream/moontang_wondertang202b_msxaudio_1.0beta.fs) | **OPL4 + MSX-Audio, no HDMI.** MoonSound plus Y8950 MSX-Audio, with sound through the MSX. | **OPL4 + MSX-Audio, sin HDMI.** MoonSound más MSX-Audio Y8950, con sonido por el propio MSX. |
+
+### Before flashing / antes de grabar
+
+- **YRW801:** program `yrw801.bin` separately at `0x200000`; it is not included
+  for copyright reasons. Without it, FM works but the PCM wavetable is silent.
+  **ES:** programa la YRW801 por separado en `0x200000`; sin ella funciona FM,
+  pero no las muestras PCM.
+- **SOUNDIN:** the WonderTANG sends its mono mix through the Tang I²S amplifier.
+  **J3 must be soldered** to connect that amplifier to the MSX slot's `SOUNDIN`.
+  **ES:** J3 debe estar soldado para que el audio llegue al `SOUNDIN` del MSX.
+- **First test:** load the `.fs` into SRAM before writing external flash. It is
+  lost at power-off, which makes recovery simple. **ES:** primero carga la
+  imagen en SRAM; al apagar se recupera el firmware anterior.
+
+---
+
 **An experimental MoonSound (OPL4 / YMF278B) cartridge for MSX on a
 [Sipeed Tang Nano 20K](https://wiki.sipeed.com/hardware/en/tang/tang-nano-20k/nano-20k.html)
 (Gowin GW2AR‑18).**
@@ -16,40 +69,34 @@ MoonSound.
 nothing else.** No megaROM, no RAM expansion, no Nextor. If you want those, use
 [tnCart](https://github.com/buppu3/tnCart) — this project borrows its bus front‑end.
 
-## ⚠️ Experimental
+## ⚠️ Experimental / experimental
 
-The OPL4 has played on a WonderTANG 2.02b with an earlier build of the HDMI
-bitstream (5 October, before the latest fixes). The bitstreams delivered now —
-the MSX‑Audio one and the one for the MSXhdmi_tn20k_smd board included — pass their
-board‑level simulation but **have not been tested on a real machine** yet.
-If you try one, please open an issue with the result — good or bad.
+**Español.** La versión HDMI normal funcionó diez minutos continuos de música
+en una WonderTANG 2.02b después de la corrección de recuperación del PLL. Las
+otras combinaciones han pasado simulación y compilación, pero siguen necesitando
+pruebas en hardware. Si pruebas una, abre una incidencia con el resultado.
 
-## Two boards
+**English.** The plain HDMI build played ten continuous minutes of music on a
+WonderTANG 2.02b after the PLL-recovery fix. The other combinations pass
+simulation and implementation, but still need hardware testing. Please open an
+issue with results, good or bad.
 
-| | [WonderTANG 2.0b / 2.02b](https://github.com/lfantoniosi/WonderTANG) | MSXhdmi_tn20k_smd (rev B) |
-|---|---|---|
-| MSX bus | multiplexed | direct |
-| Sound output | **the MSX's own audio** (mono), through the Tang's amplifier and jumper J3 to `SOUNDIN` — and, with the HDMI bitstream, at the same time **HDMI** (stereo) with a VU meter on screen | **HDMI** (stereo), with a VU meter on screen |
-| `/INT`, `/WAIT`, `/BUSDIR` | yes | **not routed on that PCB** — see the limits below |
-| Bitstream | `moontang_wondertang202b_msxaudio_*.fs` — MoonSound + MSX‑Audio, no HDMI<br>`moontang_wondertang202b_*.fs` — MoonSound, no HDMI (use it if a real MSX‑Audio is plugged in)<br>`moontang_wondertang202b_hdmi_*.fs` — MoonSound + HDMI output | `moontang_smd_*.fs` (MoonSound) |
-| Build script | `fpga/build_wt_audio.tcl`, `fpga/build.tcl`, `fpga/build_wt_hdmi.tcl` (same order) | `fpga/build_smd.tcl` |
-| Guide | [`docs/WONDERTANG.md`](docs/WONDERTANG.md) | [`docs/SMD.md`](docs/SMD.md) |
+## Compatible hardware / hardware compatible
 
-**A bitstream for one board must never be flashed on the other**: the pins do not
-match and the outputs would fight the bus buffers.
+MoonTANG is documented and released for the
+[**WonderTANG 2.02b**](https://github.com/lfantoniosi/WonderTANG), with its Tang
+Nano 20K installed.
 
-### Limits of the MSXhdmi_tn20k_smd board
+**Español.** MoonTANG está documentado y se distribuye únicamente para la
+**WonderTANG 2.02b** con su Tang Nano 20K.
 
-The MSXhdmi_tn20k_smd board was designed as a video cartridge. Three slot lines a
-MoonSound uses are not connected to the FPGA, so on that board:
+The Tang I²S amplifier carries the mono mix to the MSX through jumper J3 and
+`SOUNDIN`; HDMI builds add stereo HDMI audio and the on-screen VU display in
+parallel.
 
-- **no `/INT`** — software that waits for the OPL4 timer interrupt does not get it
-  (VGMPlay on anything but a turbo R plays far too slowly);
-- **no `/BUSDIR`** — on machines that need it to read I/O ports from a cartridge,
-  the MoonSound is not detected;
-- **no `/WAIT`** — use the MSX at its normal 3.58 MHz speed.
-
-[`docs/SMD.md`](docs/SMD.md) has the details and what a board revision would need.
+**Español.** El amplificador I²S de la Tang lleva la mezcla mono al MSX mediante
+J3 y `SOUNDIN`; las versiones HDMI añaden en paralelo audio HDMI estéreo y el
+indicador VU en pantalla.
 
 ## What to flash
 
@@ -70,22 +117,19 @@ cd fpga
 gw_sh build_wt_audio.tcl  # WonderTANG + MSX-Audio, without HDMI -> impl/pnr/moontang_wt_audio.fs
 gw_sh build.tcl           # WonderTANG without HDMI   -> impl/pnr/moontang_wt.fs
 gw_sh build_wt_hdmi.tcl   # WonderTANG with HDMI      -> impl/pnr/moontang_wt_hdmi.fs
-gw_sh build_smd.tcl       # MSXhdmi_tn20k_smd board   -> impl/pnr/moontang_smd.fs
 gw_sh build_wt_hdmi_audio.tcl  # EXPERIMENTAL: WonderTANG with HDMI and MSX-Audio (see docs/WONDERTANG.md)
 ```
 
 ## Simulation
 
-The whole design is simulated against a model of each board, wired **by FPGA pin
-number**: the pin table of each model comes from the real artefact (the official
-WonderTANG firmware constraints; the KiCad PCB of the HDMI board), so a wrong pin in
-our `.cst` shows up as a failing test. A Z80 bus model with real timing drives it,
-with models of the SPI flash and of the embedded SDRAM.
+The whole design is simulated against a WonderTANG model wired **by FPGA pin
+number**. Its pin table comes from the official WonderTANG firmware constraints, so
+a wrong pin in our `.cst` shows up as a failing test. A Z80 bus model with real
+timing drives it, with models of the SPI flash and of the embedded SDRAM.
 
 ```sh
 # WSL / Linux with Icarus Verilog and sv2v
 bash tools/sim/board/run_board.sh todo     # WonderTANG: the three bitstreams + negative controls
-bash tools/sim/board_smd/run_smd.sh        # MSXhdmi_tn20k_smd: bus, memory, HDMI audio, VU meter
 ```
 
 See [`docs/VERIFICATION.md`](docs/VERIFICATION.md) for what is and is not covered.
@@ -112,8 +156,6 @@ MoonTANG is a thin integration on top of excellent open work. See
   the WonderTANG port, the `wt200b` board definition and the I2S transmitter.
 - **luca / lfantoniosi** — the [**WonderTANG**](https://github.com/lfantoniosi/WonderTANG)
   cartridge (BSD‑2) and its authoritative pinout.
-- **Javier Abadia** (`jabadiagm`) — the MSXhdmi / Asgard cartridge the HDMI board
-  derives from; its pinout and the way its firmware turns the data bus around.
 - **Sameer Puri** — [**hdl‑util/hdmi**](https://github.com/hdl-util/hdmi)
   (MIT / Apache‑2.0), the HDMI transmitter with audio.
 - **Takayuki Hara** (`t.hara` / hra1129) — the `ip_sdram` controller from the V9968

@@ -1,4 +1,4 @@
-# MoonTANG on the WonderTANG 2.0b / 2.02b
+# MoonTANG on the WonderTANG 2.02b
 
 The OPL4 has played on a WonderTANG 2.02b with an earlier build of the HDMI
 bitstream (the one of the morning of 5 October, before the latest fixes). The
@@ -7,7 +7,7 @@ hardware yet. This is the bring‑up guide.
 
 ## What you need
 
-- A WonderTANG **2.0b or 2.02b** with its Tang Nano 20K.
+- A WonderTANG **2.02b** with its Tang Nano 20K.
 - **Jumper J3 soldered** to the Tang's speaker pads. On these boards the sound goes
   through the Tang's own I2S amplifier and J3 into the slot's `SOUNDIN` pin: the
   MoonSound is heard through the MSX's audio output, **in mono** (left + right
@@ -23,33 +23,24 @@ hardware yet. This is the bring‑up guide.
 
 | Bitstream | What it does |
 |---|---|
-| `bitstream/moontang_wondertang202b_msxaudio_YYYYMMDD.fs` | MoonSound **and MSX‑Audio** (see below). Sound to the MSX only. |
-| `bitstream/moontang_wondertang202b_YYYYMMDD.fs` | MoonSound. Sound to the MSX only. |
-| `bitstream/moontang_wondertang202b_hdmi_YYYYMMDD.fs` | MoonSound. Sound to the MSX **and**, at the same time, stereo sound and a VU meter on the Tang's HDMI connector. |
+| `bitstream/moontang_wondertang202b_msxaudio_1.0beta.fs` | MoonSound **and MSX‑Audio**, without HDMI. Sound to the MSX only. |
+| `bitstream/moontang_wondertang202b_hdmi_1.0beta.fs` | MoonSound with HDMI: sound to the MSX **and**, at the same time, stereo sound and a VU meter on the Tang's HDMI connector. |
+| `bitstream/moontang_wondertang202b_hdmi_msxaudio_1.0beta.fs` | MoonSound, MSX‑Audio **and** HDMI together. This is the high-occupancy beta build. |
 
 Which one:
 
-- **MSX‑Audio** — for everyday use through the MSX's own speakers: the MoonSound
-  plus an MSX‑Audio, both heard through J3.
-- **Without MSX‑Audio** — if a real MSX‑Audio (Philips Music Module, Panasonic
-  FS‑CA1, Toshiba HX‑MU900) is already plugged into another slot. Both would answer
-  at ports `C0h–C1h`; this bitstream leaves them alone.
-- **HDMI** — for a first test: the screen shows whether the wave ROM loaded, whether
-  the MSX clock is there, and whether the chip is producing sound — even if nothing
-  is heard through the MSX yet (J3 not soldered, for instance).
-
-Seen from the MSX, the MoonSound is the same in the three. A fourth one, with
-both HDMI and MSX‑Audio, exists only as an experiment (see the end of this page).
-
-Do **not** flash `moontang_smd_*.fs` on this board, and never flash any of these
-three on the MSXhdmi_tn20k_smd board.
+- **MSX‑Audio, no HDMI** — for everyday use through the MSX's own speakers: the
+  MoonSound plus an MSX‑Audio, both heard through J3.
+- **OPL4 + HDMI** — if a real MSX‑Audio (Philips Music Module, Panasonic FS‑CA1,
+  Toshiba HX‑MU900) is already plugged into another slot. The HDMI screen also
+  shows that the wave ROM, MSX clock and audio path are alive.
+- **MSX‑Audio + HDMI** — the all-in-one beta build. It offers both chips and HDMI,
+  but uses 91 % of the FPGA CLS; load it in SRAM first.
 
 For a first try you can load the `.fs` into **SRAM** instead (it is lost at power
 off): if something is wrong the board is back to its previous firmware after a
 power cycle. Do it with the MSX off (the Tang powered from USB), or reset the MSX
-afterwards. On the 2.0b the core reuses the JTAG pins: to flash it again, the
-official README says to hold **S1** while plugging the USB cable and during the
-whole flashing.
+afterwards.
 
 - **Check the wave ROM after every flash.** With some tools, erasing the flash for
   a new bitstream also wipes the area after it (mangOPL4 lost another image that

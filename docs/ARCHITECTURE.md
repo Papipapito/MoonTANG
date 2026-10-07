@@ -4,8 +4,7 @@ MoonTANG is a MoonSound cartridge as a pure **I/O peripheral**: OPL3 FM on ports
 `C4h–C7h` and the 24‑voice PCM wavetable on `7Eh–7Fh`. One WonderTANG bitstream
 adds an MSX‑Audio (Y8950) on `C0h–C1h`. It never uses `/SLTSL` or the memory space.
 
-The design is one **core** — the MoonSound itself — and one thin **shell** per
-carrier board.
+The design is one **core** — the MoonSound itself — inside the WonderTANG shell.
 
 ```
                     ┌───────────────────────── moontang_core ─────────────────────────┐
@@ -28,17 +27,17 @@ carrier board.
   │ WonderTANG shell               │          │ WonderTANG: i2s_feed ▶ I2S ▶ Tang amp │
   │   WT200B_BUS (tnCart): scans   │          │   ▶ J3 ▶ SOUNDIN (mono)               │
   │   the multiplexed bus          │          ├───────────────────────────────────────┤
-  ├────────────────────────────────┤          │ moontang_av (HDMI, both boards):      │
-  │ MSXhdmi_tn20k_smd top          │          │   48 kHz stereo ▶ hdl‑util/hdmi       │
-  │   smd_bus: direct bus + data   │          │   vu_meter ▶ vu_screen ▶ 720x480p     │
-  │   buffer turnaround            │          └───────────────────────────────────────┘
+  │                                │          │ moontang_av (HDMI builds):             │
+  │                                │          │   48 kHz stereo ▶ hdl‑util/hdmi       │
+  │                                │          │   vu_meter ▶ vu_screen ▶ 720x480p     │
+  │                                │          └───────────────────────────────────────┘
   └────────────────────────────────┘
 ```
 
 | File | Role |
 |---|---|
 | `src/moontang_core.sv` | the MoonSound: FM, PCM, wave memory chain, loader, mixer, bus‑alive guard; with `Y8950 = 1`, also the MSX‑Audio |
-| `src/moontang_wt_shell.sv` | WonderTANG 2.0b / 2.02b shell: bus scanner, core, I2S; the PCM engine clock comes from the top |
+| `src/moontang_wt_shell.sv` | WonderTANG 2.02b shell: bus scanner, core, I2S; the PCM engine clock comes from the top |
 | `src/moontang_wt_hdmi_top.sv` | WonderTANG top **with** HDMI: shell + `moontang_av` |
 | `src/moontang_top.sv` | WonderTANG top **without** HDMI: shell + a PLL for the PCM engine |
 | `src/moontang_wt_audio_top.sv` | WonderTANG top **without** HDMI and **with** the MSX‑Audio: `moontang_top.sv` with `Y8950 = 1`; same ports and instance names, so it uses the same `moontang.cst` and `moontang.sdc` |
@@ -46,14 +45,12 @@ carrier board.
 | `src/moontang_y8950.sv` | the MSX‑Audio: bus decoding of `C0h–C1h`, write strobes, 3.58 MHz clock enable, IRQ; instantiates the parts below |
 | `y8950/jtopl/*`, `y8950/jt10/*`, `y8950/y8950_adpcm.v`, `y8950/adpcm_sdram.v` | Y8950 FM (`jtopl2`), ADPCM‑B decoder, ADPCM registers and sample RAM interface |
 | `src/moontang_mix_y8950.v` | mixer of the MSX‑Audio bitstream: OPL4 + Y8950 and the limiter |
-| `src/moontang_smd_top.sv` | MSXhdmi_tn20k_smd top: direct bus + core + `moontang_av` |
-| `src/moontang_av.sv` | the HDMI output shared by both boards: stereo sound, VU meter, and the PCM engine clock |
+| `src/moontang_av.sv` | the WonderTANG HDMI output: stereo sound, VU meter, and the PCM engine clock |
 | `src/opl4fm.v`, `opl3/*` | FM half; register shadow for read‑back; timer IRQ |
 | `src/opl4_pcm.v`, `opl4wave/ymf278b_gowin.v` | PCM half: bus glue, fractional clock enable, sample cache, engine |
 | `src/wave_sdram.v`, `wv_to_sdram.v`, `ip_sdram_tangnano20k_c.v` | wave memory: arbiter, byte‑to‑word bridge for two clients with refresh and watchdog, SDRAM controller |
 | `src/yrw801_loader.v`, `flash_rw.v` | copy of the YRW801 from SPI flash to SDRAM at power‑up |
 | `wondertang/*` | tnCart multiplexed bus front‑end and I2S transmitter; `src/i2s_feed.v` hands samples to it |
-| `src/smd_bus.v` | direct bus front‑end for the HDMI board |
 | `src/vu_meter.v`, `vu_screen.v`, `font8x8.v`, `hdmi/*` | level meters, their screen, HDMI transmitter (all inside `moontang_av`) |
 
 The OPL4 files are the ones of the MSXimus (Zynq branch) and are kept in sync with
@@ -73,7 +70,7 @@ Icarus does not start those registers at X. Synthesis does not see them.
 
 Everything derives from the Tang's 27 MHz crystal. The GW2AR‑18 has two PLLs.
 
-| Clock | Without HDMI (WonderTANG) | With HDMI (both boards) | Used by |
+| Clock | Without HDMI | With HDMI | Used by |
 |---|---|---|---|
 | 108 MHz + shifted copy | PLL 1 | PLL 1 | SDRAM, wave arbiter, (WonderTANG) bus scanner |
 | 54 MHz | PLL 1 ÷ 2 | PLL 1 ÷ 2 | host side of the OPL4, bus |
@@ -210,17 +207,11 @@ between WAVE and OUT: the Y8950's term as it enters the mix, `(FM + ADPCM/8) × 
 together to make room. With the default `Y8950 = 0` the screen and the logic are
 the usual ones: the netlists of the four regular bitstreams did not change.
 
-## Bus front‑ends
+## Bus front-end
 
-- **WonderTANG.** Address and control lines are multiplexed on eight pins behind
+Address and control lines are multiplexed on eight pins behind
   three buffers. tnCart's scanner selects each group in turn at 108 MHz and filters
   every bit. `/WAIT` and `/INT` leave through inverting transistors.
-- **HDMI board.** The bus is direct. Inputs go through a two‑stage synchroniser and
-  a two‑sample filter. For a read, the data buffer is turned towards the MSX about
-  130 ns after `/RD` and the FPGA starts driving one cycle later; both are released
-  together within about 50 ns of `/RD` rising. Because that board has no `/WAIT`, the
-  wave memory data and the device ID are answered from the bus side
-  (`RD_MIRROR`).
 
 ## MSX‑Audio (Y8950)
 

@@ -7,16 +7,14 @@ not cover, so a failure on hardware can be narrowed down quickly.
 
 The OPL4 has played on a WonderTANG 2.02b with an earlier build of the HDMI
 bitstream (the morning of 5 October, before the latest fixes). Not tried on
-hardware yet: any of the bitstreams delivered now (the four in `bitstream/` and the
-experimental HDMI + MSX‑Audio one); the MSX‑Audio and the MSXhdmi_tn20k_smd board
-have never been. The MSX‑BASIC tests of [`tools/msx/`](../tools/msx/)
+hardware yet: the MSX‑Audio builds and the HDMI + MSX‑Audio build. The MSX‑BASIC
+tests of [`tools/msx/`](../tools/msx/)
 were checked against openMSX.
 
 ## The board‑level benches
 
-`tools/sim/board/` (WonderTANG) and `tools/sim/board_smd/` (HDMI board) simulate the
-**real top level** of each variant — converted to plain Verilog with sv2v and run
-with Icarus Verilog — together with:
+`tools/sim/board/` simulates the **real WonderTANG top level** of each variant —
+converted to plain Verilog with sv2v and run with Icarus Verilog — together with:
 
 - Gowin's own simulation models of the rPLL, CLKDIV, BUFG and OSER10 primitives, so
   the clock frequencies and the SDRAM clock phase are the ones the parameters give;
@@ -37,7 +35,6 @@ bash tools/sim/board/run_board.sh hdmi     # with HDMI, and the HDMI receiver mo
 bash tools/sim/board/run_board.sh audio    # with the MSX-Audio: phases L and M
 bash tools/sim/board/run_board.sh todo     # all three, negative controls, blank flash, sweeps
 bash tools/sim/board/run_board.sh hdmi_audio  # the EXPERIMENTAL HDMI + MSX-Audio bitstream and its negative control (about 60 minutes; not in "todo")
-bash tools/sim/board_smd/run_smd.sh        # MSXhdmi_tn20k_smd
 ```
 
 ### Where the pin numbers come from
@@ -49,7 +46,6 @@ from different sources:
 | | FPGA side | Board side |
 |---|---|---|
 | WonderTANG | wrapper generated from `fpga/constraints/moontang.cst` | pin table generated from the official firmware's `top.cst`; bus multiplexing as the official `top.v` does it |
-| HDMI board | wrapper generated from `fpga/constraints/moontang_smd.cst` | pin table generated from the board's KiCad PCB, following the copper through the 74LVC245 buffers |
 
 ### What the WonderTANG bench checks (75 checks; 84 with HDMI; 120 with the MSX‑Audio)
 
@@ -164,8 +160,8 @@ wave ROM should be. The copy finishes, but the checksum does not match, and the
 HDMI screen has to say `YRW801 NO VALIDA` (`run_board.sh todo`, `blank`).
 
 Checked once by hand (it needs a file that is no longer in the tree): the PCM engine
-from before the slot read‑back fix fails the read‑back phase on both boards, with 7
-of 12 single read‑backs wrong on the WonderTANG and 4 of 12 on the HDMI board.
+from before the slot read‑back fix fails the WonderTANG read‑back phase, with 7 of 12
+single read‑backs wrong.
 
 A sweep of the FPGA clock‑to‑pad delay in the multiplexed‑bus loop passes up to
 18.5 ns of total loop delay (the scanner samples 18.5 ns after switching a group,
