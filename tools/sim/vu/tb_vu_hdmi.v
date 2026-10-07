@@ -37,6 +37,7 @@ module tb_vu_hdmi;
     wire [29:0] peak   = {5'd20, 5'd25, 5'd13, 5'd16, 5'd22, 5'd26};
     wire [1:0]  st_rom = 2'd1;
     wire        st_msx = 1'b1;
+    wire [4:0]  sample_level = 5'd14;
 
     wire [9:0]  cx, cy;
     wire [23:0] rgb;
@@ -51,7 +52,8 @@ module tb_vu_hdmi;
         .level (level),
         .peak  (peak),
         .st_rom(st_rom),
-        .st_msx(st_msx)
+        .st_msx(st_msx),
+        .sample_level(sample_level)
     );
 
     // como en moontang_smd_top.sv
@@ -123,10 +125,10 @@ module tb_vu_hdmi;
         end
         $fclose(fd);
         fd = $fopen("frames_hdmi.txt", "w");
-        $fdisplay(fd, "vu_hdmi.ppm %0d %0d %0d %0d %0d %0d %0d %0d %0d %0d %0d %0d %0d %0d",
+        $fdisplay(fd, "vu_hdmi.ppm %0d %0d %0d %0d %0d %0d %0d %0d %0d %0d %0d %0d %0d %0d %0d",
                   level[4:0], level[9:5], level[14:10], level[19:15], level[24:20], level[29:25],
                   peak[4:0],  peak[9:5],  peak[14:10],  peak[19:15],  peak[24:20],  peak[29:25],
-                  st_rom, st_msx);
+                  st_rom, st_msx, sample_level);
         $fclose(fd);
         $display("HDMI: %0d tramos de video de %0d pixeles a la salida de hdmi.sv; volcado vu_hdmi.ppm",
                  nline, HA);

@@ -56,6 +56,9 @@ module opl4_pcm (
     // ---- dominio del motor (clk_eng = clk_x1/2 de la DDR3) ----
     input  wire        clk_eng,
     input  wire        eng_rst_n,      // calibrada + loader YRW801 done + reset
+    // Vive mas que el reset del motor: la RAM de samples no se borra al
+    // perder el PLL HDMI ni con /RESET del MSX, y su indicador tampoco.
+    input  wire        sample_used_rst_n,
 
     // puerto de memoria hacia wave_ddr3 (su FSM va a clk_x1; relojes
     // relacionados /2 -> paths sincronos, la vuelta es un toggle)
@@ -66,6 +69,9 @@ module opl4_pcm (
     input  wire [7:0]  mem_rdata,      // registrado en el shim, estable
     input  wire [15:0] mem_rword,      // _104: PALABRA entera (cache de palabra)
     input  wire        mem_done_t,     // TOGGLE = completada
+    // Maximo byte escrito en 0x200000..0x3FFFFF, codificado Gray para el
+    // cruce al dominio de video. 22 bits representan 0..2 MiB.
+    output wire [21:0] sample_used_gray,
 
     // ---- telemetria (_95): {ifw_hits[3:0], alive[3:0]} ----
     // alive avanza con cada CE del motor: dos lecturas seguidas con el
@@ -576,6 +582,19 @@ wire        wre_go   = wre_free && (wr_hold || wr_edge);
 wire [21:0] wre_addr = wr_hold ? wrh_addr : e_addr22;
 wire [7:0]  wre_data = wr_hold ? wrh_data : e_mdo;
 wire [4:0]  wre_slot = wr_hold ? wrh_slot : e_slot;
+
+// No hay asignador de memoria en un YMF278B: la ocupacion visible es la marca
+// de agua alta (maxima direccion RAM que ha recibido una escritura + 1). Es
+// monotona hasta el siguiente encendido y no cuenta la YRW801 de solo lectura.
+reg  [21:0] sample_used_bin;
+wire [21:0] sample_used_next = {1'b0, wre_addr[20:0]} + 22'd1;
+assign sample_used_gray = sample_used_bin ^ (sample_used_bin >> 1);
+always @(posedge clk_eng or negedge sample_used_rst_n) begin
+    if (!sample_used_rst_n)
+        sample_used_bin <= 22'd0;
+    else if (wre_go && wre_addr[21] && sample_used_next > sample_used_bin)
+        sample_used_bin <= sample_used_next;
+end
 
 // Puertos de la BSRAM de cache (era v3). Escritura = fill; lectura corre
 // SIEMPRE (la direccion es cuasi-estatica alrededor de rd_edge). Sin reset:

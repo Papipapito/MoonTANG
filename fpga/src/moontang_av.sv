@@ -26,7 +26,10 @@ module moontang_av #(
     parameter [8*10-1:0] BUILD = "2026-10-05",   // 10 caracteres, pie de pantalla
     // 1 = clk_audio (48 kHz, una treintena de registros) por una red global.
     // 0 = por rutado normal: para cuando las 8 redes globales ya estan ocupadas.
-    parameter AUDIO_BUFG = 1
+    parameter AUDIO_BUFG = 1,
+    // 1 = septima barra "MSX-AUDIO" (mono) en el vumetro, con y8950_vu: solo la
+    // variante con Y8950 y HDMI. 0 = la pantalla de siempre (y8950_vu sin usar).
+    parameter Y8950 = 0
 ) (
     input  wire        clk,             // 27 MHz del cristal (pin 4)
     input  wire        clk_54m,         // reloj de sistema (audio y medidores)
@@ -42,12 +45,15 @@ module moontang_av #(
     input  wire signed [15:0] wave_r,
     input  wire signed [15:0] mix_l,    // lo que va al HDMI
     input  wire signed [15:0] mix_r,
+    input  wire signed [15:0] y8950_vu, // aporte del MSX-Audio (solo con Y8950 = 1)
 
     // ---- estado (casi estatico) ----
     input  wire        wl_done,
     input  wire        wl_error,
     input  wire        wl_badimg,       // la imagen copiada no es la YRW801
     input  wire        clk_alive,
+    // marca de agua alta de la RAM OPL4, Gray y originada en clk_eng.
+    input  wire [21:0] sample_used_gray,
 
     // ---- HDMI de la Tang ----
     output wire        tmds_clk_p,
@@ -124,28 +130,70 @@ module moontang_av #(
     always @(posedge clk_pix)
         if (cx == 10'd0 && cy == 10'd480) frame_tog <= ~frame_tog;
 
-    wire [29:0] vu_level, vu_peak;
-    vu_meter #(.NCH(6)) u_vu (
-        .clk(clk_54m), .frame_tog(frame_tog),
-        .samples({mix_r, mix_l, wave_r, wave_l, fm_r, fm_l}),
-        .level(vu_level), .peak(vu_peak)
-    );
+    localparam integer NBAR = Y8950 ? 7 : 6;
+    wire [NBAR*5-1:0] vu_level, vu_peak;
+    generate
+        if (Y8950) begin : g_vu7
+            vu_meter #(.NCH(7)) u_vu (
+                .clk(clk_54m), .frame_tog(frame_tog),
+                .samples({y8950_vu, mix_r, mix_l, wave_r, wave_l, fm_r, fm_l}),
+                .level(vu_level), .peak(vu_peak)
+            );
+        end
+        else begin : g_vu6
+            vu_meter #(.NCH(6)) u_vu (
+                .clk(clk_54m), .frame_tog(frame_tog),
+                .samples({mix_r, mix_l, wave_r, wave_l, fm_r, fm_l}),
+                .level(vu_level), .peak(vu_peak)
+            );
+        end
+    endgenerate
 
     // estado, al dominio de pixel (casi estatico)
     reg [1:0] st_rom_s0 = 2'd0, st_rom_s1 = 2'd0;
     reg       st_msx_s0 = 1'b0, st_msx_s1 = 1'b0;
+    reg [4:0] sample_level_s0 = 5'd0, sample_level_s1 = 5'd0;
+    reg [21:0] sample_gray_s0 = 22'd0, sample_gray_s1 = 22'd0;
     always @(posedge clk_pix) begin
         st_rom_s0 <= wl_error ? 2'd2 : (!wl_done ? 2'd0 : (wl_badimg ? 2'd3 : 2'd1));
         st_rom_s1 <= st_rom_s0;
         st_msx_s0 <= clk_alive;
         st_msx_s1 <= st_msx_s0;
+        sample_level_s0 <= sample_level;
+        sample_level_s1 <= sample_level_s0;
     end
 
-    vu_screen #(.BUILD(BUILD)) u_screen (
+    // CDC de una cantidad monotona: Gray evita que el video vea un valor
+    // intermedio al cruzar la marca de agua del motor PCM.
+    always @(posedge clk_54m) begin
+        if (!sys_locked) begin
+            sample_gray_s0 <= 22'd0;
+            sample_gray_s1 <= 22'd0;
+        end
+        else begin
+            sample_gray_s0 <= sample_used_gray;
+            sample_gray_s1 <= sample_gray_s0;
+        end
+    end
+    function [21:0] gray2bin;
+        input [21:0] gray;
+        integer n;
+        begin
+            gray2bin[21] = gray[21];
+            for (n = 20; n >= 0; n = n - 1)
+                gray2bin[n] = gray2bin[n + 1] ^ gray[n];
+        end
+    endfunction
+    wire [21:0] sample_used_bin = gray2bin(sample_gray_s1);
+    // 28/2MiB = 1/64 - 1/512.  Se incluye el bit 21: 2 MiB exactos son
+    // 32 - 4 = 28 segmentos, no una vuelta a cero al llegar al ultimo byte.
+    wire [4:0] sample_level = sample_used_bin[21:16] - sample_used_bin[21:19];
+
+    vu_screen #(.BUILD(BUILD), .Y8950(Y8950)) u_screen (
         .clk(clk_pix), .rst_n(rst_n_pix),
         .cx(cx), .cy(cy), .rgb(rgb),
         .level(vu_level), .peak(vu_peak),
-        .st_rom(st_rom_s1), .st_msx(st_msx_s1)
+        .st_rom(st_rom_s1), .st_msx(st_msx_s1), .sample_level(sample_level_s1)
     );
 
     // ------------------------------------------------------------------

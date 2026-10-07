@@ -116,6 +116,111 @@ identification code. MoonTANG modification: the redundant redeclaration of the
 re‑layout. `fpga/src/smd_bus.v` is new code; the timing with which it turns the
 data buffer around follows his Asgard `slave_bus.v`. No code of his is included.
 
+## 10. JTOPL and the JT12 ADPCM‑B decoder — GPL‑3.0‑or‑later
+
+Only in the MSX‑Audio bitstreams (`build_wt_audio.tcl` and the experimental
+`build_wt_hdmi_audio.tcl`).
+
+- `fpga/y8950/jtopl/*.v` © **Jose Tejada Gomez** (`jotego`), from
+  [JTOPL](https://github.com/jotego/jtopl): the Y8950 FM, used as `jtopl2`.
+- `fpga/y8950/jt10/jt10_adpcmb.v`, `jt10_adpcmb_interpol.v`, `jt10_adpcm_div.v`
+  © **Jose Tejada Gomez**, from [JT12](https://github.com/jotego/jt12): the ADPCM‑B
+  decoder.
+
+Licensed under the GNU General Public License v3.0 or later, as stated in each
+file header. The license text is kept next to the files in
+`fpga/y8950/jtopl/LICENSE` and `fpga/y8950/jt10/LICENSE` (the same GPL‑3.0 as
+`../LICENSE`).
+
+The copies are the ones carried by the MSXimus core, which forces the shift
+registers of `jtopl_sh.v` and `jtopl_sh_rst.v` into flip‑flops
+(`syn_srlstyle = "registers"`). MoonTANG modification: `jtopl_div.v`,
+`jtopl_slot_cnt.v`, `jtopl_sh.v` and `jtopl_reg_ch.v` get `initial` values behind
+`` `ifdef MOONTANG_SIM ``, a macro that only the simulation scripts define;
+synthesis does not see them. All of these changes are marked in the files.
+
+## 11. Y8950 ADPCM registers and sample RAM — from the MSXimus core
+
+`fpga/y8950/y8950_adpcm.v` and `fpga/y8950/adpcm_sdram.v` are unchanged copies
+from the **MSXimus** core by the same author (Papipapito, with Claude), GPL‑3.0.
+The register behaviour of `y8950_adpcm.v` is modelled on openMSX's Y8950
+emulation.
+
+## 12. FM cartridge wrapper — BSD‑3‑Clause (Jokin Miragaia)
+
+`fpga/src/opl4fm.v` is derived from `rtl/src/cartridge_opl3.sv` of **Jokin
+Miragaia**'s (`antxiko`) *mangOPL4* fork of tnCartWonder. Its header gives the
+license and holder (`BSD 3-Clause License`, `Copyright (c) 2026, Jokin Miragaia`);
+the full notice is kept in the header of `opl4fm.v`. The MSXimus/MoonTANG changes
+(read‑back shadow registers, status on `C4h` and `C6h`, the `7Eh`/`7Fh` stub, the
+54 MHz bus domain) are by Papipapito (Albert, with Claude).
+
+```
+BSD 3-Clause License
+Copyright (c) 2026, Jokin Miragaia <tech.fxmedia@gmail.com>
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice,
+   this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its
+   contributors may be used to endorse or promote products derived from
+   this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+```
+
+## 13. SPI flash reader — BSD‑2‑Clause (lfantoniosi)
+
+`fpga/src/flash_rw.v` is derived from `fpga/src/flash.v` of
+[lfantoniosi/WonderTANG](https://github.com/lfantoniosi/WonderTANG). The read
+interface is the original one; the write path (write enable, sector erase, page
+program, status polling with a WIP timeout) was added by Papipapito (Albert, with
+Claude). The notice is kept in the header of `flash_rw.v`.
+
+```
+BSD 2-Clause License
+
+Copyright (c) 2023, lfantoniosi
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this
+   list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+```
+
 ---
 
 ## Not distributed

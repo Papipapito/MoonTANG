@@ -1,6 +1,9 @@
 # MoonTANG on the WonderTANG 2.0b / 2.02b
 
-Not yet run on hardware. This is the bring‑up guide.
+The OPL4 has played on a WonderTANG 2.02b with an earlier build of the HDMI
+bitstream (the one of the morning of 5 October, before the latest fixes). The
+bitstreams in `bitstream/` — the MSX‑Audio one included — have not been run on
+hardware yet. This is the bring‑up guide.
 
 ## What you need
 
@@ -15,21 +18,31 @@ Not yet run on hardware. This is the bring‑up guide.
 
 | Step | File | Address | Gowin Programmer operation |
 |---|---|---|---|
-| 1 | **one** of the two bitstreams below | `0x000000` | External Flash mode |
+| 1 | **one** of the three bitstreams below | `0x000000` | External Flash mode |
 | 2 | `yrw801.bin` | `0x200000` | exFlash C Bin Erase, Program thru GAO‑Bridge |
 
 | Bitstream | What it does |
 |---|---|
-| `bitstream/moontang_wondertang202b_hdmi_YYYYMMDD.fs` | Sound to the MSX **and**, at the same time, stereo sound and a VU meter on the Tang's HDMI connector. |
-| `bitstream/moontang_wondertang202b_YYYYMMDD.fs` | Sound to the MSX only. |
+| `bitstream/moontang_wondertang202b_msxaudio_YYYYMMDD.fs` | MoonSound **and MSX‑Audio** (see below). Sound to the MSX only. |
+| `bitstream/moontang_wondertang202b_YYYYMMDD.fs` | MoonSound. Sound to the MSX only. |
+| `bitstream/moontang_wondertang202b_hdmi_YYYYMMDD.fs` | MoonSound. Sound to the MSX **and**, at the same time, stereo sound and a VU meter on the Tang's HDMI connector. |
 
-For the MSX the two are the same cartridge. The HDMI one is the better choice for a
-first test: the screen shows whether the wave ROM loaded, whether the MSX clock is
-there, and whether the chip is producing sound — even if nothing is heard through
-the MSX yet (J3 not soldered, for instance).
+Which one:
 
-Do **not** flash `moontang_smd_*.fs` on this board, and never flash this one on the
-HDMI board.
+- **MSX‑Audio** — for everyday use through the MSX's own speakers: the MoonSound
+  plus an MSX‑Audio, both heard through J3.
+- **Without MSX‑Audio** — if a real MSX‑Audio (Philips Music Module, Panasonic
+  FS‑CA1, Toshiba HX‑MU900) is already plugged into another slot. Both would answer
+  at ports `C0h–C1h`; this bitstream leaves them alone.
+- **HDMI** — for a first test: the screen shows whether the wave ROM loaded, whether
+  the MSX clock is there, and whether the chip is producing sound — even if nothing
+  is heard through the MSX yet (J3 not soldered, for instance).
+
+Seen from the MSX, the MoonSound is the same in the three. A fourth one, with
+both HDMI and MSX‑Audio, exists only as an experiment (see the end of this page).
+
+Do **not** flash `moontang_smd_*.fs` on this board, and never flash any of these
+three on the MSXhdmi_tn20k_smd board.
 
 For a first try you can load the `.fs` into **SRAM** instead (it is lost at power
 off): if something is wrong the board is back to its previous firmware after a
@@ -47,6 +60,37 @@ whole flashing.
   [`tools/msx/`](../tools/msx/)) checks it from the MSX.
 - With openFPGALoader: `openFPGALoader -b tangnano20k --external-flash -o 2097152 yrw801.bin`.
 
+## The MSX‑Audio bitstream
+
+`moontang_wondertang202b_msxaudio_*.fs` adds a Y8950 — the MSX‑Audio chip — next
+to the MoonSound. Nothing else has to be flashed for it.
+
+- **Ports `C0h–C1h`**, the first MSX‑Audio unit. `C2h–C3h` stay free.
+- **FM**: 9 channels, rhythm mode included. **ADPCM**: 256 KB of sample RAM, the
+  most the Y8950 addresses, kept in the Tang's SDRAM apart from the MoonSound's
+  memory.
+- **No MSX‑Audio BIOS.** The cartridge only answers I/O ports. Software that drives
+  the chip directly should work — **VGMPlay**, **MoonBlaster 1.4** (FM and ADPCM
+  samples), games that write to the ports — but none of it has been tried yet.
+  Software that needs the MSX‑Audio BIOS ROM — **FAC SoundTracker**, for instance —
+  does not find it.
+- **`/INT`.** The Y8950 interrupt (timer 1, timer 2, end of sample, buffer ready,
+  each with its mask in register 04h) shares `/INT` with the OPL4's. After a reset
+  every source is masked. The MSX BIOS interrupt handler does not clear the
+  Y8950's flags (with a real MSX‑Audio either): a program that unmasks a source
+  has to clear it itself (register 04h = 80h). Buffer ready, unmasked while the
+  ADPCM is idle, cannot be cleared at all (it is a level): `/INT` stays asserted
+  until it is masked again.
+- **Write timing**: after a data write to an FM register (20h and up), leave about
+  23 µs (84 cycles of 3.58 MHz) before the next one, as the real chip requires.
+  Software written for the MSX‑Audio already does.
+- **Sound**: mono, into both channels of the mix, so it goes out through J3 with
+  the MoonSound. No HDMI.
+- Not there: recording (the ADC), the DAC data registers, and the keyboard and
+  general‑purpose I/O ports of the chip.
+
+`mt7aud` (see [`tools/msx/`](../tools/msx/)) checks it from the MSX.
+
 ## The HDMI output
 
 Plug a TV or an HDMI monitor with speakers into the Tang's HDMI connector. It is
@@ -61,6 +105,11 @@ optional: with nothing connected the cartridge behaves exactly the same.
   another firmware, a truncated file) / `ERROR` (the copy did not finish: flash or
   SDRAM not answering). And `MSX OK` / `--`. The check is a sum of the 2 MB copied,
   compared with the sum of the real YRW801; `mt4yrw` checks what the MSX reads.
+- `SAMPLE RAM`: 28 segments show the high-water mark of the OPL4's 2 MiB custom
+  sample RAM.  A segment is about 3.6 %.  It is the highest byte address written
+  since power-up, rather than an allocation count: the YMF278B has no file system
+  or allocator.  Therefore a single write near the end correctly lights nearly
+  the whole bar; the YRW801 ROM and the MSX-Audio ADPCM RAM are not included.
 - The HDMI sound is **stereo**, 48 kHz; the sound that goes into the MSX is the
   same mix in mono.
 - 720×480 at 60 Hz, flagged 16:9. A DVI‑only monitor will not take it.
@@ -78,7 +127,9 @@ optional: with nothing connected the cartridge behaves exactly the same.
 | steady on | ready and the MSX is running |
 
 FM does not depend on the YRW801: **FM plays but the wavetable is silent** points at
-the flash/SDRAM chain; **nothing at all** points at the bus or the power.
+the flash/SDRAM chain; **nothing at all** points at the bus or the power. The
+MSX‑Audio does not depend on the YRW801 either, but its ADPCM samples live in the
+SDRAM.
 
 ## Things to know before powering it
 
@@ -95,12 +146,17 @@ the flash/SDRAM chain; **nothing at all** points at the bus or the power.
   those two lines with a scope at power‑up.
 - **Speed.** At 3.58 MHz `/WAIT` reaches the Z80 with about 70 ns to spare. From
   5.37 MHz on it may arrive too late: reading the wave memory (not playing it)
-  can fail in turbo modes.
+  can fail in turbo modes. The other ports (FM, and the MSX‑Audio) do not use
+  `/WAIT`; in simulation their reads are right with margin up to 7.16 MHz, and
+  right but at the limit at 10.74 MHz.
 - **Detection right after power‑up.** For the ~2 s the wave ROM is being copied the
   PCM engine is held in reset: a program that looks for the MoonSound in that
   window will not see the wavetable. Wait for the LED to stay on.
 - **Level.** The mix is the MSXimus one: FM at its native level, wavetable 6 dB
-  down. There is no volume control on the cartridge.
+  down. With the MSX‑Audio bitstream the Y8950 is added with the MSXimus balance,
+  and a limiter compresses the peaks of the sum above 3/4 of full scale (2:1)
+  instead of clipping them; below that nothing changes. There is no volume control
+  on the cartridge.
 
 ## Telemetry
 
@@ -113,5 +169,30 @@ copy has finished.
 The embedded SDRAM runs at 108 MHz. Read data is captured half a cycle later than
 in the original controller (which was tuned for 85.9 MHz), at the point the official
 WonderTANG firmware and tnCart use at this frequency. The original capture point is
-still available as a parameter (`SDRAM_RD_CAPTURE_CLK = 0` in `moontang_top.sv`) in
-case a board prefers it.
+still available as a parameter (`SDRAM_RD_CAPTURE_CLK = 0` in the top of each
+bitstream: `moontang_top.sv`, `moontang_wt_audio_top.sv`, `moontang_wt_hdmi_top.sv`)
+in case a board prefers it.
+
+## Experimental: HDMI and MSX‑Audio together
+
+`fpga/files/20261005/moontang_wondertang202b_hdmi_msxaudio_EXPERIMENTAL_20261005.fs`
+(built with `fpga/build_wt_hdmi_audio.tcl`; deliberately not in `bitstream/`) is the
+HDMI bitstream with the Y8950 of the MSX‑Audio bitstream switched on: everything both
+of them do, at the same time. The VU meter gets a seventh bar, **MSX‑AUDIO** (mono:
+what the Y8950 adds to the mix), between WAVE and OUT. It is flashed like the others
+(the `.fs` at `0x000000`, the YRW801 at `0x200000`).
+
+It fills the chip: 68 % of the logic and 90 % of the CLS (the HDMI bitstream: 55 %
+and 76 %). Gowin closes timing on every build tried: 0 setup and 0 hold violations
+in 6 builds — 4 different placements, two of them routed twice, and two of the
+placements with the design slightly perturbed — with at least 1.2 ns of setup
+margin (hold: at least 0.074 ns, on BSRAM data inputs). This
+one has 2.75 ns of setup margin on the 108 MHz clock. The board bench passes on it
+(`run_board.sh hdmi_audio`, see [VERIFICATION.md](VERIFICATION.md)). It has **not
+been tried on hardware**, and there is one risk timing analysis cannot see: the
+interface with the Tang Nano 20K's embedded SDRAM (`O_sdram_*`, `IO_sdram_dq`) is
+not constrained in the `.sdc` of any MoonTANG bitstream, so "timing met" says
+nothing about it; how much margin it has depends on where the registers that drive
+and capture it end up, and in a chip this full they move more from one build to
+the next. If the wave memory or the ADPCM misbehave with this bitstream and not
+with the others, that is the first suspect.

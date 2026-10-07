@@ -16,7 +16,7 @@
 `default_nettype none
 
 module moontang_wt_hdmi_top #(
-    parameter [8*10-1:0] BUILD = "2026-10-05",
+    parameter [8*10-1:0] BUILD = "1.0beta   ",
     parameter AUDIO_MONO = 1,               // ver moontang_wt_shell
     parameter SDRAM_RD_CAPTURE_CLK = 1      // ver moontang_core
 ) (
@@ -76,6 +76,7 @@ module moontang_wt_hdmi_top #(
     wire clk_54m, lock_main;
     wire signed [15:0] fm_l, fm_r, wave_l, wave_r, mix_l, mix_r;
     wire wl_done, wl_error, wl_badimg, clk_alive;
+    wire [21:0] sample_used_gray;
 
     moontang_wt_shell #(
         .AUDIO_MONO(AUDIO_MONO), .SDRAM_RD_CAPTURE_CLK(SDRAM_RD_CAPTURE_CLK),
@@ -85,7 +86,7 @@ module moontang_wt_hdmi_top #(
         .clk_eng(clk_eng), .lock_eng(lock_hdmi),
         .clk_54m(clk_54m), .lock_main(lock_main),
         .fm_l(fm_l), .fm_r(fm_r), .wave_l(wave_l), .wave_r(wave_r),
-        .mix_l(mix_l), .mix_r(mix_r),
+        .mix_l(mix_l), .mix_r(mix_r), .sample_used_gray(sample_used_gray),
         .wl_done(wl_done), .wl_error(wl_error), .wl_badimg(wl_badimg), .clk_alive(clk_alive),
         .CLK_27M(CLK_27M),
         .CART_BUSDIR_n(CART_BUSDIR_n),
@@ -129,7 +130,7 @@ module moontang_wt_hdmi_top #(
         .clk(CLK_27M), .clk_54m(clk_54m), .sys_locked(lock_main),
         .clk_eng(clk_eng), .lock(lock_hdmi),
         .fm_l(fm_l), .fm_r(fm_r), .wave_l(wave_l), .wave_r(wave_r),
-        .mix_l(mix_l), .mix_r(mix_r),
+        .mix_l(mix_l), .mix_r(mix_r), .sample_used_gray(sample_used_gray),
         .wl_done(wl_done), .wl_error(wl_error), .wl_badimg(wl_badimg), .clk_alive(clk_alive),
         .tmds_clk_p(tmds_clk_p), .tmds_clk_n(tmds_clk_n),
         .tmds_data_p(tmds_data_p), .tmds_data_n(tmds_data_n)

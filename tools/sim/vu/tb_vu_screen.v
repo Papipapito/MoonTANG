@@ -128,6 +128,7 @@ module tb_vu_screen;
     reg  [29:0] peak   = 30'd0;
     reg  [1:0]  st_rom = 2'd0;
     reg         st_msx = 1'b0;
+    reg  [4:0]  sample_level = 5'd0;
     wire [23:0] rgb;
 
     vu_screen #(.BUILD(`VU_BUILD)) dut (
@@ -139,7 +140,8 @@ module tb_vu_screen;
         .level (level),
         .peak  (peak),
         .st_rom(st_rom),
-        .st_msx(st_msx)
+        .st_msx(st_msx),
+        .sample_level(sample_level)
     );
 
     // ------------------------------------------------------------------
@@ -174,12 +176,14 @@ module tb_vu_screen;
         input [29:0] pv;
         input [1:0]  sr;
         input        sm;
+        input [4:0]  sl;
         begin
             wait (cy == 10'd500);
             level  = lv;
             peak   = pv;
             st_rom = sr;
             st_msx = sm;
+            sample_level = sl;
             wait (cy == 10'd0);
             wait (cy == 10'd481);
         end
@@ -285,10 +289,10 @@ module tb_vu_screen;
                 $fwrite(fd, "%c%c%c", c[23:16], c[15:8], c[7:0]);
             end
             $fclose(fd);
-            $fdisplay(flist, "%0s %0d %0d %0d %0d %0d %0d %0d %0d %0d %0d %0d %0d %0d %0d", name,
+            $fdisplay(flist, "%0s %0d %0d %0d %0d %0d %0d %0d %0d %0d %0d %0d %0d %0d %0d %0d", name,
                       level[4:0], level[9:5], level[14:10], level[19:15], level[24:20], level[29:25],
                       peak[4:0],  peak[9:5],  peak[14:10],  peak[19:15],  peak[24:20],  peak[29:25],
-                      st_rom, st_msx);
+                      st_rom, st_msx, sample_level);
             $display("  volcado %0s", name);
         end
     endtask
@@ -318,17 +322,17 @@ module tb_vu_screen;
 
         // ---- 1. cuadros de muestra ----
         $display("CUADROS DE MUESTRA (barrido completo 858x525)");
-        frame(six(0, 0, 0, 0, 0, 0), six(0, 0, 0, 0, 0, 0), 2'd0, 1'b0);
+        frame(six(0, 0, 0, 0, 0, 0), six(0, 0, 0, 0, 0, 0), 2'd0, 1'b0, 5'd0);
         check_bars;
         dump("vu_a.ppm");
 
         //          FM L FM R WV L WV R OUT L OUT R
         frame(six(  23,  19,  12,   8,  21,  17),
-              six(  26,  22,  16,  13,  25,  20), 2'd1, 1'b1);
+              six(  26,  22,  16,  13,  25,  20), 2'd1, 1'b1, 5'd14);
         check_bars;
         dump("vu_b.ppm");
 
-        frame(six(28, 28, 28, 28, 28, 28), six(28, 28, 28, 28, 28, 28), 2'd2, 1'b1);
+        frame(six(28, 28, 28, 28, 28, 28), six(28, 28, 28, 28, 28, 28), 2'd2, 1'b1, 5'd28);
         check_bars;
         check_geometry;
         dump("vu_c.ppm");
@@ -344,7 +348,7 @@ module tb_vu_screen;
                 lvv[5*b +: 5] = v[4:0];
                 cov_lv[b*29 + v] = 1'b1;
             end
-            frame(lvv, 30'd0, f[1:0], f[2]);
+            frame(lvv, 30'd0, f[1:0], f[2], 5'd0);
             check_bars;
         end
         $display("BARRIDO DE NIVELES: 29 cuadros, cobertura barra x nivel %0s, %0d errores",
@@ -367,7 +371,7 @@ module tb_vu_screen;
                 endcase
                 lvv[5*b +: 5] = v[4:0];
             end
-            frame(lvv, pkv, 2'd1, 1'b1);
+            frame(lvv, pkv, 2'd1, 1'b1, 5'd0);
             check_bars;
         end
         $display("MARCA DE PICO: 29 cuadros, cobertura barra x pico %0s, %0d errores",
@@ -377,10 +381,10 @@ module tb_vu_screen;
 
         // ---- 4. valores fuera de rango ----
         e0 = errors;
-        frame(six(31, 29, 30, 28, 0, 1), six(29, 31, 30, 0, 28, 1), 2'd3, 1'b0);
+        frame(six(31, 29, 30, 28, 0, 1), six(29, 31, 30, 0, 28, 1), 2'd3, 1'b0, 5'd0);
         check_bars;
         dump("vu_d.ppm");
-        frame(six(5, 31, 14, 27, 20, 26), six(31, 3, 21, 28, 21, 26), 2'd1, 1'b0);
+        frame(six(5, 31, 14, 27, 20, 26), six(31, 3, 21, 28, 21, 26), 2'd1, 1'b0, 5'd0);
         check_bars;
         dump("vu_e.ppm");
         $display("FUERA DE RANGO: 2 cuadros, %0d errores", errors - e0);

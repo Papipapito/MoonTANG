@@ -3,9 +3,10 @@
 //                        moontang_core (el MoonSound en si).
 //
 // Es todo lo que la placa necesita menos una cosa: el reloj del motor PCM, que
-// llega de fuera (clk_eng). Asi sirve para los dos tops de esta placa:
-//   moontang_top.sv          sin HDMI: clk_eng de un PLL propio (37,125 MHz)
-//   moontang_wt_hdmi_top.sv  con HDMI: clk_eng de los 135 MHz del transmisor
+// llega de fuera (clk_eng). Asi sirve para los tres tops de esta placa:
+//   moontang_top.sv           sin HDMI: clk_eng de un PLL propio (37,125 MHz)
+//   moontang_wt_audio_top.sv  igual, y con el MSX-Audio (Y8950 = 1)
+//   moontang_wt_hdmi_top.sv   con HDMI: clk_eng de los 135 MHz del transmisor
 //
 // El bus del slot NO llega directo: la WonderTANG multiplexa A0-A15 y el
 // control (MERQ/IORQ/CS1/CS2/RESET/RFSH/CS12/M1) en mp[7:0] con msel_n[2:0].
@@ -44,7 +45,9 @@ module moontang_wt_shell #(
     // UART de telemetria (f(clk_eng) / 115200)
     parameter [23:0] ENG_CE_INC   = 24'd6272,
     parameter [23:0] ENG_CE_MOD   = 24'd6875,
-    parameter [8:0]  ENG_BAUD_DIV = 9'd322
+    parameter [8:0]  ENG_BAUD_DIV = 9'd322,
+    // 1 = ademas el MSX-Audio (Y8950) en C0h-C1h (ver moontang_core)
+    parameter Y8950 = 0
 ) (
     // ---- reloj del motor PCM, del top ----
     input  wire        clk_eng,
@@ -59,6 +62,8 @@ module moontang_wt_shell #(
     output wire signed [15:0] wave_r,
     output wire signed [15:0] mix_l,
     output wire signed [15:0] mix_r,
+    output wire signed [15:0] y8950_vu,     // aporte del Y8950 (0 si Y8950 = 0)
+    output wire [21:0] sample_used_gray,    // RAM OPL4 usada (Gray, clk_eng)
     output wire        wl_done,
     output wire        wl_error,
     output wire        wl_badimg,
@@ -122,7 +127,13 @@ module moontang_wt_shell #(
     // (clk_eng, el reloj del motor PCM, lo pone el top: de un PLL propio o,
     //  con HDMI, de los 135 MHz del transmisor)
 
-    wire pll_locked = lock_main & lock_eng;
+    // El PLL del sistema alimenta el bus, SDRAM, loader y DAC.  En las
+    // variantes HDMI, lock_eng pertenece al PLL de 135 MHz: una perdida breve
+    // de ese PLL no debe reiniciar toda la tarjeta ni volver a copiar la
+    // YRW801.  El motor PCM recibe lock_eng por separado y se resetea en su
+    // propio dominio hasta que su reloj vuelva a estar estable.
+    wire sys_locked = lock_main;
+    wire pll_locked = lock_main & lock_eng; // diagnostico: ambos PLL sanos
 
     // clk_27m para el FM: DERIVADO del PLL (108/4), no del pad del cristal.
     wire clk_27m;
@@ -138,10 +149,10 @@ module moontang_wt_shell #(
 
     // reloj del DAC: 27/5 = 5.4 MHz -> /3.5 = 1.542 MHz (48 kHz x 32)
     wire clk_5m4, clk_dac;
-    CLKDIV u_div5m4 (.CLKOUT(clk_5m4), .HCLKIN(CLK_27M), .RESETN(pll_locked), .CALIB(1'b0));
+    CLKDIV u_div5m4 (.CLKOUT(clk_5m4), .HCLKIN(CLK_27M), .RESETN(sys_locked), .CALIB(1'b0));
     defparam u_div5m4.DIV_MODE = "5";
     defparam u_div5m4.GSREN    = "false";
-    CLKDIV u_divdac (.CLKOUT(clk_dac), .HCLKIN(clk_5m4), .RESETN(pll_locked), .CALIB(1'b0));
+    CLKDIV u_divdac (.CLKOUT(clk_dac), .HCLKIN(clk_5m4), .RESETN(sys_locked), .CALIB(1'b0));
     defparam u_divdac.DIV_MODE = "3.5";
     defparam u_divdac.GSREN    = "false";
 
@@ -197,18 +208,19 @@ module moontang_wt_shell #(
     moontang_core #(
         .SDRAM_RD_CAPTURE_CLK(SDRAM_RD_CAPTURE_CLK),
         .ENG_CE_INC(ENG_CE_INC), .ENG_CE_MOD(ENG_CE_MOD),
-        .ENG_BAUD_DIV(ENG_BAUD_DIV)
+        .ENG_BAUD_DIV(ENG_BAUD_DIV), .Y8950(Y8950)
     ) u_core (
         .clk_108m(clk_108m), .clk_sdram(clk_sdram), .clk_54m(clk_54m),
         .clk_27m(clk_27m), .clk_eng(clk_eng),
-        .pll_locked(pll_locked), .por_reset_n(por_reset_n),
+        .pll_locked(sys_locked), .eng_locked(lock_eng), .por_reset_n(por_reset_n),
         .iorq_n(s_iorq_n), .rd_n(s_rd_n), .wr_n(s_wr_n), .m1_n(s_m1_n),
         .addr(s_addr), .din(s_din),
         .slot_reset_n(s_reset_n), .slot_clk(s_clk),
         .rd_data(rd_data), .rd_active(rd_active), .wait_n(wait_n), .int_n(int_n),
         .bus_reset_n(bus_reset_n), .clk_alive(clk_alive),
         .fm_l(fm_l), .fm_r(fm_r), .wave_l(wave_l), .wave_r(wave_r),
-        .mix_l(mix_l), .mix_r(mix_r), .mix_mono(mix_mono),
+        .mix_l(mix_l), .mix_r(mix_r), .mix_mono(mix_mono), .y8950_vu(y8950_vu),
+        .sample_used_gray(sample_used_gray),
         .sdram_init_busy(sdram_init_busy), .wl_done(wl_done), .wl_error(wl_error), .wl_badimg(wl_badimg),
         .sd_timeout(sd_timeout), .dbg_tx(opl4_dbg_tx),
         .mspi_cs(mspi_cs), .mspi_sclk(mspi_sclk), .mspi_miso(mspi_miso), .mspi_mosi(mspi_mosi),

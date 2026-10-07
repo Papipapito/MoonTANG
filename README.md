@@ -8,25 +8,31 @@ A full OPL4 — **18‑channel OPL3 FM + 24‑voice PCM wavetable** — in an FP
 that plugs into a real MSX slot. It is a spin‑off of the OPL4 block of the
 **MSXimus** core, kept in sync with it, running standalone.
 
-**Scope is deliberately narrow: a MoonSound and nothing else.** No megaROM, no RAM
-expansion, no Nextor. If you want those, use
+On the WonderTANG there is also a bitstream that adds an **MSX‑Audio** (Y8950:
+9‑channel FM + ADPCM with 256 KB of sample RAM) at ports `C0h–C1h`, next to the
+MoonSound.
+
+**Scope is deliberately narrow: a MoonSound (plus, optionally, an MSX‑Audio) and
+nothing else.** No megaROM, no RAM expansion, no Nextor. If you want those, use
 [tnCart](https://github.com/buppu3/tnCart) — this project borrows its bus front‑end.
 
-## ⚠️ Experimental — not yet run on hardware
+## ⚠️ Experimental
 
-Both variants build to a clean, timing‑closed bitstream and pass a board‑level
-simulation, but **neither has been tested on a real machine**. If you build one,
-please open an issue with the result — good or bad.
+The OPL4 has played on a WonderTANG 2.02b with an earlier build of the HDMI
+bitstream (5 October, before the latest fixes). The bitstreams delivered now —
+the MSX‑Audio one and the one for the MSXhdmi_tn20k_smd board included — pass their
+board‑level simulation but **have not been tested on a real machine** yet.
+If you try one, please open an issue with the result — good or bad.
 
 ## Two boards
 
 | | [WonderTANG 2.0b / 2.02b](https://github.com/lfantoniosi/WonderTANG) | MSXhdmi_tn20k_smd (rev B) |
 |---|---|---|
 | MSX bus | multiplexed | direct |
-| Sound output | **the MSX's own audio** (mono), through the Tang's amplifier and jumper J3 to `SOUNDIN` — and, at the same time, **HDMI** (stereo) with a VU meter on screen | **HDMI** (stereo), with a VU meter on screen |
+| Sound output | **the MSX's own audio** (mono), through the Tang's amplifier and jumper J3 to `SOUNDIN` — and, with the HDMI bitstream, at the same time **HDMI** (stereo) with a VU meter on screen | **HDMI** (stereo), with a VU meter on screen |
 | `/INT`, `/WAIT`, `/BUSDIR` | yes | **not routed on that PCB** — see the limits below |
-| Bitstream | `moontang_wondertang202b_hdmi_*.fs`, or `moontang_wondertang202b_*.fs` without the HDMI output | `moontang_smd_*.fs` |
-| Build script | `fpga/build_wt_hdmi.tcl` (with HDMI), `fpga/build.tcl` (without) | `fpga/build_smd.tcl` |
+| Bitstream | `moontang_wondertang202b_msxaudio_*.fs` — MoonSound + MSX‑Audio, no HDMI<br>`moontang_wondertang202b_*.fs` — MoonSound, no HDMI (use it if a real MSX‑Audio is plugged in)<br>`moontang_wondertang202b_hdmi_*.fs` — MoonSound + HDMI output | `moontang_smd_*.fs` (MoonSound) |
+| Build script | `fpga/build_wt_audio.tcl`, `fpga/build.tcl`, `fpga/build_wt_hdmi.tcl` (same order) | `fpga/build_smd.tcl` |
 | Guide | [`docs/WONDERTANG.md`](docs/WONDERTANG.md) | [`docs/SMD.md`](docs/SMD.md) |
 
 **A bitstream for one board must never be flashed on the other**: the pins do not
@@ -53,6 +59,7 @@ MoonSound uses are not connected to the FPGA, so on that board:
 | 2 | `yrw801.bin` — the 2 MB Yamaha YRW801 wave ROM, **not included** (copyright) | `0x200000` | Gowin Programmer — *exFlash C Bin Erase, Program thru GAO‑Bridge* |
 
 FM works without the YRW801; the wavetable half stays silent until it is there.
+The MSX‑Audio needs nothing more: its sample RAM is in the Tang's SDRAM.
 
 ## Building
 
@@ -60,9 +67,11 @@ Gowin toolchain 1.9.12.03 (`gw_sh`):
 
 ```sh
 cd fpga
-gw_sh build_wt_hdmi.tcl   # WonderTANG with HDMI      -> impl/pnr/moontang_wt_hdmi.fs
+gw_sh build_wt_audio.tcl  # WonderTANG + MSX-Audio, without HDMI -> impl/pnr/moontang_wt_audio.fs
 gw_sh build.tcl           # WonderTANG without HDMI   -> impl/pnr/moontang_wt.fs
+gw_sh build_wt_hdmi.tcl   # WonderTANG with HDMI      -> impl/pnr/moontang_wt_hdmi.fs
 gw_sh build_smd.tcl       # MSXhdmi_tn20k_smd board   -> impl/pnr/moontang_smd.fs
+gw_sh build_wt_hdmi_audio.tcl  # EXPERIMENTAL: WonderTANG with HDMI and MSX-Audio (see docs/WONDERTANG.md)
 ```
 
 ## Simulation
@@ -75,7 +84,7 @@ with models of the SPI flash and of the embedded SDRAM.
 
 ```sh
 # WSL / Linux with Icarus Verilog and sv2v
-bash tools/sim/board/run_board.sh todo     # WonderTANG, with and without HDMI, + negative controls
+bash tools/sim/board/run_board.sh todo     # WonderTANG: the three bitstreams + negative controls
 bash tools/sim/board_smd/run_smd.sh        # MSXhdmi_tn20k_smd: bus, memory, HDMI audio, VU meter
 ```
 
@@ -94,6 +103,9 @@ MoonTANG is a thin integration on top of excellent open work. See
 - **srg320** — the **YMF278B** PCM/wavetable engine (BSD‑3‑Clause), the first open RTL
   of the OPL4 wavetable, derived from **MAME**'s `ymf278b.cpp` by **R. Belmont,
   Olivier Galibert and hap**.
+- **José Tejada** (`jotego`) — [**JTOPL**](https://github.com/jotego/jtopl) (the Y8950
+  FM) and the ADPCM‑B decoder of [**JT12**](https://github.com/jotego/jt12), both
+  GPL‑3.0, in the MSX‑Audio bitstreams.
 - **Shinobu Hashimoto** (`buppu3`) — [**tnCart**](https://github.com/buppu3/tnCart)
   (BSD‑3), whose multiplexed slot front‑end the WonderTANG variant uses.
 - **Albert Herranz** (`herraa1`) — [**tnCartWonder**](https://github.com/herraa1/tnCartWonder),
@@ -110,8 +122,8 @@ MoonTANG is a thin integration on top of excellent open work. See
 - **Gowin Semiconductor** — the rPLL / CLKDIV / OSER10 primitives.
 
 And **Claude** (Anthropic) — co‑author of this port: the standalone integration,
-clocking, SDRAM bridge, loader, mixer, VU meter, constraints and testbenches were
-written in pair‑programming with Claude. See commit trailers.
+clocking, SDRAM bridge, loader, mixer, VU meter, MSX‑Audio integration, constraints
+and testbenches were written in pair‑programming with Claude. See commit trailers.
 
 ## License
 

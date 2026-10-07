@@ -4,3 +4,9 @@
 # scripts run in WSL / Linux: always LF, also on a Windows checkout
 *.sh  text eol=lf
 *.py  text eol=lf
+# Gowin build scripts: conv.sh feeds their file lists to sv2v in WSL, and a
+# CRLF checkout would hand it file names ending in a carriage return
+*.tcl text eol=lf
+# Gowin bitstreams (.fs): text files, but stored byte for byte, so that the md5
+# of the file in the repository is the md5 of the delivered bitstream
+*.fs  -text

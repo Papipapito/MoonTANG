@@ -15,9 +15,11 @@ Run them at **3.58 MHz**, once the LED is on (or the HDMI screen says
 | `mt4yrw` | The YRW801 in SDRAM: header of wave 0, a text block and the version at the end. **Run it again after every flash** |
 | `mt5ram` | Write and read back the sample RAM (200000h–3FFFFFh) |
 | `mt6pcm` | A PCM note with wave 0 of the YRW801 |
+| `mt7aud` | MSX‑Audio (Y8950 at C0h–C1h, MSX‑Audio bitstream only; with another one it says there is no MSX‑Audio and stops): status 06h, timers by polling with interrupts off, an FM note at 440 Hz, 256 ADPCM bytes written and read back, one pass up to EOS and a beep at 880 Hz, the 256 KB of sample RAM, and that it does not touch the OPL4 |
 
 The expected values were checked against openMSX with a real MoonSound
-(`moonsound` extension, YRW801 ROM).
+(`moonsound` extension, YRW801 ROM), plus its MSX‑Audio for `mt7aud` (`audio`
+extension, 256 KB).
 
 Not to be used: the test programs of other OPL4 FPGA projects that start a timer
 without masking it and without a handler hang the MSX through `/INT`, exactly
@@ -25,4 +27,6 @@ as a real MoonSound would; and those that access the wave memory without setting
 register 02h bit 0 (memory mode) read nothing.
 
 Then real software: VGMPlay twice in a row, leaving to DOS without a reset;
-MoonBlaster Wave; a reset of the MSX followed by `mt4yrw` again.
+MoonBlaster Wave; a reset of the MSX followed by `mt4yrw` again. With the
+MSX‑Audio bitstream, also VGMPlay with MSX‑Audio music and MoonBlaster 1.4: they
+drive the chip directly and should work, but they have not been tried yet.

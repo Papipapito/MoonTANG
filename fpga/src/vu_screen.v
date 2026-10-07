@@ -15,6 +15,7 @@
 //           R  ...
 //                 -36         -24      -12  0 DB  regla (1,5 dB por segmento)
 //     YRW801 OK               MSX OK              estado
+//     SAMPLE RAM [][ ]...                         marca de agua alta, 2 MiB
 //     MOONTANG 2026-10-04                         pie
 //
 // ----------------------------------------------------------------------------
@@ -53,21 +54,38 @@
 //  contando solo la tinta.
 //
 //  `level` y `peak` solo cambian en el borrado vertical y se usan tal cual.
+//
+// ----------------------------------------------------------------------------
+//  Y8950 = 1 (solo la variante EXPERIMENTAL con MSX-Audio y HDMI)
+// ----------------------------------------------------------------------------
+//  Una septima barra, MONO, entre WAVE y OUT, con el rotulo "MSX-AUDIO" en x1
+//  (en x2 no cabe antes de la barra). Para que quepa, las barras se juntan:
+//  6 px entre L y R (antes 8) y 18 px entre grupos (antes 32); la regla, el
+//  estado y el pie no se mueven. level/peak llevan entonces 7 x 5 bits; la
+//  septima (bits 34..30) es la del MSX-Audio.
+//
+//     FM    L 104   R 134     WAVE L 176   R 206     MSX-AUDIO 248
+//     OUT   L 290   R 320     (y de la barra; 24 px de alto)
+//
+//  Con Y8950 = 0 (el valor por defecto) la pantalla y la logica son las de
+//  siempre: todo lo nuevo cuelga de constantes que la sintesis quita.
 // ============================================================================
 `default_nettype none
 
 module vu_screen #(
-    parameter [8*10-1:0] BUILD = "2026-10-04"   // 10 caracteres, se pinta en el pie
+    parameter [8*10-1:0] BUILD = "2026-10-04",  // 10 caracteres, se pinta en el pie
+    parameter Y8950 = 0                         // 1 = septima barra MSX-AUDIO (ver arriba)
 ) (
     input  wire        clk,      // reloj de pixel, 27 MHz
     input  wire        rst_n,
     input  wire [9:0]  cx,       // columna 0..857 (visible 0..719), del modulo hdmi
     input  wire [9:0]  cy,       // fila    0..524 (visible 0..479)
     output reg  [23:0] rgb,      // {R,G,B}; valido UN ciclo de reloj despues de cx/cy
-    input  wire [29:0] level,    // 6 barras x 5 bits: segmentos encendidos, 0..28
-    input  wire [29:0] peak,     // 6 marcas de pico x 5 bits: 0 = sin marca, n = segmento n
+    input  wire [(Y8950 ? 35 : 30)-1:0] level,  // 6 (7) barras x 5 bits: segmentos encendidos, 0..28
+    input  wire [(Y8950 ? 35 : 30)-1:0] peak,   // 6 (7) marcas de pico x 5 bits: 0 = sin marca, n = segmento n
     input  wire [1:0]  st_rom,   // 0 = cargando la YRW801, 1 = OK, 2 = error, 3 = no es la YRW801
-    input  wire        st_msx    // 1 = reloj del MSX presente
+    input  wire        st_msx,   // 1 = reloj del MSX presente
+    input  wire [4:0]  sample_level // 0..28, marca de agua RAM OPL4 (2 MiB)
 );
 
     // ------------------------------------------------------------------
@@ -106,13 +124,15 @@ module vu_screen #(
     localparam [9:0] Y_TIT  = 10'd40;           // x4: 40..71
     localparam [9:0] Y_SUB  = 10'd54;           // x2: 54..69, misma linea base
     localparam [9:0] Y_SEP  = 10'd88;           // 2 px
-    localparam [9:0] Y_B0   = 10'd112;          // FM L
-    localparam [9:0] Y_B1   = 10'd144;          // FM R
-    localparam [9:0] Y_B2   = 10'd200;          // WAVE L
-    localparam [9:0] Y_B3   = 10'd232;          // WAVE R
-    localparam [9:0] Y_B4   = 10'd288;          // OUT L
-    localparam [9:0] Y_B5   = 10'd320;          // OUT R
+    localparam [9:0] Y_B0   = Y8950 ? 10'd104 : 10'd112;    // FM L
+    localparam [9:0] Y_B1   = Y8950 ? 10'd134 : 10'd144;    // FM R
+    localparam [9:0] Y_B2   = Y8950 ? 10'd176 : 10'd200;    // WAVE L
+    localparam [9:0] Y_B3   = Y8950 ? 10'd206 : 10'd232;    // WAVE R
+    localparam [9:0] Y_B4   = Y8950 ? 10'd290 : 10'd288;    // OUT L
+    localparam [9:0] Y_B5   = 10'd320;                      // OUT R
+    localparam [9:0] Y_B6   = 10'd248;                      // MSX-AUDIO (solo Y8950)
     localparam [9:0] LBL_DY = 10'd5;            // rotulo x2 centrado en la barra
+    localparam [9:0] Y_L6   = Y_B6 + 10'd9;     // rotulo x1 (7 filas de tinta) centrado
     localparam [9:0] Y_L0   = Y_B0 + LBL_DY;
     localparam [9:0] Y_L1   = Y_B1 + LBL_DY;
     localparam [9:0] Y_L2   = Y_B2 + LBL_DY;
@@ -121,6 +141,7 @@ module vu_screen #(
     localparam [9:0] Y_L5   = Y_B5 + LBL_DY;
     localparam [9:0] Y_DB   = 10'd352;          // x1
     localparam [9:0] Y_ST   = 10'd392;          // x2
+    localparam [9:0] Y_MEM  = 10'd416;          // x1 + barra de 8 px
     localparam [9:0] Y_FT   = 10'd440;          // x1
 
     // ------------------------------------------------------------------
@@ -217,14 +238,27 @@ module vu_screen #(
     localparam [6:0] S_MSX  = 7'd73;    // "MSX"
     localparam [6:0] S_DASH = 7'd76;    // "--"
     localparam [6:0] S_BAD  = 7'd78;    // "NO VALIDA"
+    localparam [6:0] S_MSXA = 7'd87;    // "MSX-AUDIO" (solo Y8950)
+    localparam [6:0] S_SRAM = 7'd96;    // "SAMPLE RAM"
 
-    localparam [8*128-1:0] STR = {
+    // con Y8950 = 0, exactamente la tabla de siempre (los huecos tambien: es
+    // una ROM y cambiarlos cambiaria la logica)
+    localparam [8*128-1:0] STR = Y8950 ? {
         "MOONTANG ", BUILD,
         "MOONSOUND OPL4",
         "FM", "WAVE", "OUT", "L", "R",
         "-36", "-24", "-12", "0 DB",
         "YRW801", "OK", "ERROR", "...", "MSX", "--", "NO VALIDA",
-        {41{" "}}
+        "MSX-AUDIO",
+        "SAMPLE RAM",
+        {22{" "}}
+    } : {
+        "MOONTANG ", BUILD,
+        "MOONSOUND OPL4",
+        "FM", "WAVE", "OUT", "L", "R",
+        "-36", "-24", "-12", "0 DB",
+        "YRW801", "OK", "ERROR", "...", "MSX", "--", "NO VALIDA",
+        {9{" "}}, "SAMPLE RAM", {22{" "}}
     };
 
     // ------------------------------------------------------------------
@@ -247,7 +281,9 @@ module vu_screen #(
                      R_OUR  = 4'd8,
                      R_DB   = 4'd9,
                      R_ST   = 4'd10,
-                     R_FT   = 4'd11;
+                     R_FT   = 4'd11,
+                     R_AUD  = 4'd12,    // "MSX-AUDIO" (solo Y8950)
+                     R_MEM  = 4'd13;    // "SAMPLE RAM"
 
     function in_y;                      // y0 <= y < y0 + h
         input [9:0] y;
@@ -270,7 +306,9 @@ module vu_screen #(
         else if (in_y(cy, Y_L5,  10'd16)) trow = R_OUR;
         else if (in_y(cy, Y_DB,  10'd8))  trow = R_DB;
         else if (in_y(cy, Y_ST,  10'd16)) trow = R_ST;
+        else if (in_y(cy, Y_MEM, 10'd8))  trow = R_MEM;
         else if (in_y(cy, Y_FT,  10'd8))  trow = R_FT;
+        else if (Y8950 && in_y(cy, Y_L6, 10'd8)) trow = R_AUD;
         else                              trow = R_NONE;
     end
 
@@ -326,8 +364,13 @@ module vu_screen #(
             {R_ST,   2'd3}: it = {X_ST2V, sm_str, 5'd2,   2'd1, Y_ST[4:0],  sm_col};
 
             {R_FT,   2'd0}: it = {X_FT,   S_FOOT, 5'd19,  2'd0, Y_FT[4:0],  T_GREY};
+            {R_MEM,  2'd0}: it = {X_FT,   S_SRAM, 5'd10,  2'd0, Y_MEM[4:0], T_LABEL};
 
-            default:        it = {10'h3FF, 22'd0};
+            // "MSX-AUDIO" va en el default para que, con Y8950 = 0, la tabla
+            // sea exactamente la de siempre (un caso mas cambiaria la logica)
+            default:        it = (Y8950 && trow == R_AUD && slot == 2'd0)
+                               ? {X_FT, S_MSXA, 5'd9, 2'd0, Y_L6[4:0], T_LABEL}
+                               : {10'h3FF, 22'd0};
         endcase
     end
 
@@ -422,7 +465,9 @@ module vu_screen #(
         end
     end
 
-    // barra de esta linea
+    // barra de esta linea (lv35/pk35: con Y8950 = 0 la septima es cero y no se usa)
+    wire [34:0] lv35 = level;
+    wire [34:0] pk35 = peak;
     reg       bar_v;
     reg [4:0] lvl;
     reg [4:0] pk;
@@ -434,6 +479,8 @@ module vu_screen #(
         else if (in_y(cy, Y_B3, BAR_H)) begin lvl = level[19:15]; pk = peak[19:15]; end
         else if (in_y(cy, Y_B4, BAR_H)) begin lvl = level[24:20]; pk = peak[24:20]; end
         else if (in_y(cy, Y_B5, BAR_H)) begin lvl = level[29:25]; pk = peak[29:25]; end
+        else if (Y8950 && in_y(cy, Y_B6, BAR_H)) begin lvl = lv35[34:30]; pk = pk35[34:30]; end
+        else if (in_y(cy, Y_MEM, 10'd8)) begin lvl = sample_level; pk = 5'd0; end
         else begin
             bar_v = 1'b0;
             lvl   = 5'd0;

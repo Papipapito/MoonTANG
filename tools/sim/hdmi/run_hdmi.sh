@@ -6,13 +6,10 @@
 # Uso (WSL Ubuntu-24.04):  bash tools/sim/hdmi/run_hdmi.sh [modo] [+opciones]
 #   (sin modo)   prueba principal ESTRICTA (CEA-861 + HDMI 1.4) sobre fpga/hdmi
 #                tal cual esta. Acaba en "RESULTADO: PASS" o "RESULTADO: FAIL".
-#   tolerante    la misma prueba ACEPTANDO A SABIENDAS las desviaciones
-#                conocidas de esta copia de hdl-util: hsync un pixel antes
-#                (porche delantero 15), vsync una linea tarde (porche delantero
-#                10), 8 caracteres de control entre video e isla, y preambulo de
-#                video sin video tras la ultima linea. Todo lo demas se exige.
-#   parche       aplica hdmi_cea861.patch a una COPIA (build/) y repite la
-#                prueba estricta: demuestra que el arreglo propuesto pasa.
+#   tolerante    la misma prueba con tolerancias explicitadas; sirve para
+#                diagnosticar una copia antigua del transmisor.
+#   parche       repite la prueba estricta como comprobacion de compatibilidad:
+#                hdmi_cea861.patch ya esta integrado en fpga/hdmi/hdmi.sv.
 #   negativos    controles negativos: cada uno estropea una cosa y el banco
 #                TIENE que dar FAIL. Se hacen sobre la base que pase (estricta
 #                si pasa; si no, tolerante).
@@ -119,20 +116,8 @@ prueba_principal() {     # prueba_principal <log> [+opciones]
 }
 
 prueba_parche() {
-    local r
-    if patch --dry-run -s --binary -o /dev/null $HDMI_SRC/hdmi.sv hdmi_cea861.patch > /dev/null 2>&1; then
-        patch -s --binary -o $B/hdmi_parche_src.sv $HDMI_SRC/hdmi.sv hdmi_cea861.patch || die "patch ha fallado"
-    elif patch -R --dry-run -s --binary -o /dev/null $HDMI_SRC/hdmi.sv hdmi_cea861.patch > /dev/null 2>&1; then
-        echo "(fpga/hdmi/hdmi.sv ya lleva el parche: la prueba principal ya lo cubre)"
-        return 3
-    else
-        echo "(hdmi_cea861.patch no casa con $HDMI_SRC/hdmi.sv: ha cambiado desde que se hizo el parche)"
-        return 4
-    fi
-    convierte $B/hdmi_parche_src.sv parche
-    compila parche base
-    corre parche base $B/parche.log $EXTRA
-    cat $B/parche.log
+    echo "(hdmi_cea861.patch ya esta integrado; se comprueba el transmisor actual)"
+    prueba_principal $B/parche.log $EXTRA
 }
 
 # ---------------------------------------------------------------------------
@@ -211,9 +196,8 @@ case "$MODO" in
         ;;
     parche)
         rm -f $B/parche.log
-        prueba_parche; rc=$?
-        [ $rc -eq 3 ] && exit 0
-        [ $rc -eq 0 ] && [ "$(resultado $B/parche.log)" = PASS ]
+        prueba_parche
+        [ "$(resultado $B/parche.log)" = PASS ]
         ;;
     imagen)
         prueba_principal $B/principal.log +ppm=$B/cuadro.ppm $EXTRA
@@ -238,15 +222,11 @@ case "$MODO" in
         R3="(no pedida)"
         if [ "$MODO" = todo ]; then
             echo
-            echo "################ 3. PRUEBA ESTRICTA con hdmi_cea861.patch (sobre una copia) ################"
+            echo "################ 3. PRUEBA ESTRICTA (correccion CEA-861 integrada) ################"
             rm -f $B/parche.log
             prueba_parche > $B/parche.out 2>&1; rc=$?
-            if [ $rc -eq 3 ]; then cat $B/parche.out; R3="(ya aplicado)"
-            elif [ $rc -eq 4 ]; then cat $B/parche.out; R3="(el parche no casa)"
-            else
-                R3=$(resultado $B/parche.log)
-                sed -n '/^---------------- informe/,$p' $B/parche.log | grep -vE "^\s*\[ ok  \]"
-            fi
+            R3=$(resultado $B/parche.log)
+            sed -n '/^---------------- informe/,$p' $B/parche.log | grep -vE "^\s*\[ ok  \]"
         fi
         echo
         echo "################ 4. CONTROLES NEGATIVOS ################"
@@ -255,7 +235,7 @@ case "$MODO" in
         echo "================ RESUMEN ================"
         echo "  fpga/hdmi, prueba estricta          : $R1"
         echo "  fpga/hdmi, prueba tolerante         : $R2"
-        echo "  copia con hdmi_cea861.patch, estricta: $R3"
+        echo "  correccion CEA-861 integrada, estricta : $R3"
         echo "  controles negativos                 : $([ $RN -eq 0 ] && echo todos detectados || echo ALGUNO SIN DETECTAR)"
         [ $RN -eq 0 ] && { [ "$R1" = PASS ] || [ "$R2" = PASS ]; }
         ;;

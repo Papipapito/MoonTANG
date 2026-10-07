@@ -1,9 +1,11 @@
 // ============================================================================
 // moontang_core.sv — el MoonSound en si, comun a todas las placas.
 //
-// SOLO OPL4: FM OPL3 (puertos C4h-C7h) + wavetable PCM de 24 voces (7Eh-7Fh),
+// OPL4: FM OPL3 (puertos C4h-C7h) + wavetable PCM de 24 voces (7Eh-7Fh),
 // con su memoria de ondas (YRW801 copiada de la flash SPI a la SDRAM embebida
 // al arrancar) y la mezcla FM + wave. Sin megaram, sin RAM, sin Nextor.
+// Con Y8950 = 1, ademas el MSX-Audio (Y8950: FM + ADPCM-B) en C0h-C1h, con
+// su RAM de muestras de 256 KB en los bancos altos de la SDRAM (moontang_y8950).
 //
 // Cada placa pone alrededor su "carcasa": los PLL, el acceso al bus del slot
 // (multiplexado en la WonderTANG, directo en la MSXhdmi SMD) y la salida de
@@ -34,14 +36,19 @@ module moontang_core #(
     // 1 = las lecturas de la memoria de ondas y del identificador (IN 7Fh) se
     // sirven desde el lado del bus, sin esperar al motor: para placas SIN /WAIT.
     // 0 = como el MSXimus Z (el /WAIT cubre el viaje al motor).
-    parameter WAVE_RD_MIRROR = 0
+    parameter WAVE_RD_MIRROR = 0,
+    // 1 = MSX-Audio (Y8950) en C0h-C1h: FM + ADPCM-B, 256 KB de RAM de muestras
+    // en la SDRAM, IRQ al /INT y su sonido en la mezcla. 0 = solo el MoonSound
+    // (lo que hacian todas las variantes hasta el 05/10/2026, sin cambios).
+    parameter Y8950 = 0
 ) (
     input  wire        clk_108m,
     input  wire        clk_sdram,
     input  wire        clk_54m,
     input  wire        clk_27m,
     input  wire        clk_eng,
-    input  wire        pll_locked,
+    input  wire        pll_locked,       // PLL del sistema: SDRAM, loader y bus
+    input  wire        eng_locked,       // PLL/reloj exclusivo del motor PCM
     output wire        por_reset_n,     // reset de encendido, en clk_54m
 
     // ---- bus del MSX, en el dominio clk_54m ----
@@ -55,7 +62,7 @@ module moontang_core #(
     input  wire        slot_clk,        // CLOCK del slot (nivel, cualquier dominio)
 
     output wire [7:0]  rd_data,         // dato para una lectura nuestra
-    output wire        rd_active,       // 1 = lectura de C4-C7 / 7E-7F en curso (y bus vivo)
+    output wire        rd_active,       // 1 = lectura de C4-C7 / 7E-7F (y C0-C1 con Y8950) en curso (y bus vivo)
     output wire        wait_n,          // 0 = pedir /WAIT (ya con la guarda de bus)
     output wire        int_n,           // 0 = pedir /INT  (ya con la guarda de bus)
     output wire        bus_reset_n,     // /RESET del slot sincronizado
@@ -69,6 +76,12 @@ module moontang_core #(
     output reg  signed [15:0] mix_l = 16'sd0,   // FM + wave, saturado
     output reg  signed [15:0] mix_r = 16'sd0,
     output reg  signed [15:0] mix_mono = 16'sd0, // (L+R)/2
+    // con Y8950 = 1: lo que el MSX-Audio aporta a la mezcla (mono, saturado),
+    // para la barra MSX-AUDIO del vumetro; con Y8950 = 0 vale 0. Sin conectar
+    // (todas las variantes menos wt_hdmi_audio), la sintesis lo quita.
+    output wire signed [15:0] y8950_vu,
+    // marca de agua alta de la RAM de samples del OPL4 (Gray, clk_eng).
+    output wire [21:0] sample_used_gray,
 
     // ---- estado ----
     output wire        sdram_init_busy,
@@ -160,7 +173,10 @@ module moontang_core #(
         .wave_rd(opl4pcm_rd), .wave_dout(opl4pcm_dout),
         .wave_wait_n(opl4pcm_wait_n), .wave_status(wave_status),
         .mix_fm(opl4_mixfm), .pcm_l(opl4pcm_l), .pcm_r(opl4pcm_r),
-        .clk_eng(clk_eng), .eng_rst_n(bus_reset_n & wl_done),
+        // Si cae el PLL exclusivo del HDMI, solo se reinicia este dominio.  El
+        // resto de la tarjeta conserva SDRAM y la YRW801 ya cargada.
+        .clk_eng(clk_eng), .eng_rst_n(bus_reset_n & wl_done & eng_locked),
+        .sample_used_rst_n(por_reset_n), .sample_used_gray(sample_used_gray),
         .mem_req(weng_req), .mem_we(weng_we), .mem_addr(weng_addr),
         .mem_wdata(weng_wdata), .mem_rdata(weng_rdata),
         .mem_rword(weng_rword), .mem_done_t(weng_done_t),
@@ -168,7 +184,44 @@ module moontang_core #(
     );
 
     // ==================================================================
+    //  Y8950 (MSX-Audio) — C0h-C1h, solo con Y8950 = 1
+    // ==================================================================
+    wire        y8950_rd, y8950_int_n;
+    wire [7:0]  y8950_dout;
+    wire signed [15:0] y8950_fm, y8950_adpcm;
+    wire        wv2_req, wv2_we, wv2_done;
+    wire [21:0] wv2_addr;
+    wire [7:0]  wv2_wdata;
+    wire [15:0] wv_dout;                 // dato del puente (de los dos clientes)
+
+    generate
+    if (Y8950) begin : g_y8950
+        moontang_y8950 u_y8950 (
+            .clk_54m(clk_54m), .clk_108m(clk_108m), .rst_n(bus_reset_n),
+            .iorq_n(iorq_n), .rd_n(rd_n), .wr_n(wr_n), .m1_n(m1_n),
+            .addr(addr), .din(din),
+            .rd(y8950_rd), .dout(y8950_dout), .int_n(y8950_int_n),
+            .fm(y8950_fm), .adpcm(y8950_adpcm),
+            .wv2_req(wv2_req), .wv2_we(wv2_we), .wv2_addr(wv2_addr),
+            .wv2_wdata(wv2_wdata), .wv2_dout(wv_dout), .wv2_done(wv2_done)
+        );
+    end
+    else begin : g_no_y8950
+        assign y8950_rd    = 1'b0;
+        assign y8950_dout  = 8'hFF;
+        assign y8950_int_n = 1'b1;
+        assign y8950_fm    = 16'sd0;
+        assign y8950_adpcm = 16'sd0;
+        assign wv2_req     = 1'b0;
+        assign wv2_we      = 1'b0;
+        assign wv2_addr    = 22'd0;
+        assign wv2_wdata   = 8'd0;
+    end
+    endgenerate
+
+    // ==================================================================
     //  Cadena de memoria de ondas: wave_sdram -> wv_to_sdram -> ip_sdram
+    //  (con Y8950, la RAM del ADPCM es el segundo cliente del puente)
     // ==================================================================
     wire        wl_req_toggle, wl_we, wl_done_toggle;
     wire [21:0] wl_addr;
@@ -176,7 +229,6 @@ module moontang_core #(
     wire        wv_req, wv_we;
     wire [21:0] wv_addr;
     wire [7:0]  wv_wdata;
-    wire [15:0] wv_dout;
     wire        wv_done;
 
     wave_sdram u_wave (
@@ -201,6 +253,8 @@ module moontang_core #(
         .clk(clk_108m), .rst_n(por_reset_n),
         .wv_req(wv_req), .wv_we(wv_we), .wv_addr(wv_addr), .wv_wdata(wv_wdata),
         .wv_dout(wv_dout), .wv_done(wv_done), .sd_timeout(sd_timeout),
+        .wv2_req(wv2_req), .wv2_we(wv2_we), .wv2_addr(wv2_addr), .wv2_wdata(wv2_wdata),
+        .wv2_done(wv2_done),
         .bus_address(sd_address), .bus_valid(sd_valid), .bus_write(sd_write),
         .bus_refresh(sd_refresh), .bus_wdata(sd_wdata), .bus_wdata_mask(sd_wdata_mask),
         .bus_rdata(sd_rdata), .bus_rdata_en(sd_rdata_en), .bus_ready(sd_ready)
@@ -253,8 +307,8 @@ module moontang_core #(
     // ==================================================================
     //  Vuelta al bus: dato leido + WAIT + INT, con la guarda de bus vivo
     // ==================================================================
-    wire any_rd = opl4fm_rd | opl4pcm_rd;
-    assign rd_data = opl4fm_rd ? opl4fm_dout : opl4pcm_dout;
+    wire any_rd = opl4fm_rd | opl4pcm_rd | y8950_rd;
+    assign rd_data = opl4fm_rd ? opl4fm_dout : y8950_rd ? y8950_dout : opl4pcm_dout;
 
     // GUARDA DE BUS VIVO (leccion de SlotDoctor en una WonderTANG real, 23/07/2026):
     // con la Tang alimentada por USB y el MSX apagado o arrancando, las lineas
@@ -284,7 +338,8 @@ module moontang_core #(
     // /WAIT: SOLO el stretch de la lectura wave (el motor ya limita a ~19 us).
     // NO se mete sdram_init_busy: si un PLL no engancha, el MSX quedaria muerto.
     assign wait_n = opl4pcm_wait_n | ~bus_ok;
-    assign int_n  = opl4fm_int_n   | ~bus_ok;
+    // /INT: el del OPL3 y (con Y8950) el del MSX-Audio, en AND
+    assign int_n  = (opl4fm_int_n & y8950_int_n) | ~bus_ok;
 
     // ==================================================================
     //  Mezcla = la del MSXimus Z (top_zynq.v, _180 + estereo del 23/09/2026):
@@ -314,14 +369,39 @@ module moontang_core #(
 
     wire signed [17:0] mixL = {{2{fm_l[15]}}, fm_l} + {{2{wave_l[15]}}, wave_l};
     wire signed [17:0] mixR = {{2{fm_r[15]}}, fm_r} + {{2{wave_r[15]}}, wave_r};
-    wire signed [18:0] mixS = {mixL[17], mixL} + {mixR[17], mixR};
-    wire signed [17:0] mixM = mixS[18:1];                 // (L+R)/2
 
-    always @(posedge clk_54m) begin
-        mix_l    <= sat16(mixL);
-        mix_r    <= sat16(mixR);
-        mix_mono <= sat16(mixM);
+    generate
+    if (!Y8950) begin : g_mix
+        wire signed [18:0] mixS = {mixL[17], mixL} + {mixR[17], mixR};
+        wire signed [17:0] mixM = mixS[18:1];             // (L+R)/2
+
+        always @(posedge clk_54m) begin
+            mix_l    <= sat16(mixL);
+            mix_r    <= sat16(mixR);
+            mix_mono <= sat16(mixM);
+        end
+        assign y8950_vu = 16'sd0;
     end
+    else begin : g_mix_y8950
+        // El Y8950 entra mono en L y R: (FM + ADPCM >>> 3) x5, como en el
+        // MSXimus, con su limitador de rodilla a la salida. Todo en
+        // moontang_mix_y8950.v (asi lo prueba tools/sim/y8950/tb_mix.v tal cual).
+        wire signed [15:0] ym_l, ym_r, ym_mono, ym_y;
+        moontang_mix_y8950 u_mix (
+            .clk_54m(clk_54m), .mixL(mixL), .mixR(mixR),
+            .y8950_fm(y8950_fm), .y8950_adpcm(y8950_adpcm),
+            .out_l(ym_l), .out_r(ym_r), .out_mono(ym_mono), .out_y(ym_y)
+        );
+        reg signed [15:0] y8950_vu_r = 16'sd0;
+        always @(posedge clk_54m) y8950_vu_r <= ym_y;
+        assign y8950_vu = y8950_vu_r;
+        always @(posedge clk_54m) begin
+            mix_l    <= ym_l;
+            mix_r    <= ym_r;
+            mix_mono <= ym_mono;
+        end
+    end
+    endgenerate
 
 endmodule
 

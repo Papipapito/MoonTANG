@@ -192,13 +192,16 @@ generate
     endcase
 endgenerate
 
-always_comb begin
+// Sincronismos registrados: deben llevar las mismas etapas que video_data y
+// mode.  Sin este registro hsync/vsync salen un pixel (y una linea) tarde
+// respecto al video y el transmisor deja de cumplir CEA-861.
+always_ff @(posedge clk_pixel) begin
     hsync <= invert ^ (cx >= screen_width + hsync_pulse_start && cx < screen_width + hsync_pulse_start + hsync_pulse_size);
     // vsync pulses should begin and end at the start of hsync, so special
     // handling is required for the lines on which vsync starts and ends
-    if (cy == screen_height + vsync_pulse_start)
+    if (cy == screen_height + vsync_pulse_start - 1)
         vsync <= invert ^ (cx >= screen_width + hsync_pulse_start);
-    else if (cy == screen_height + vsync_pulse_start + vsync_pulse_size)
+    else if (cy == screen_height + vsync_pulse_start + vsync_pulse_size - 1)
         vsync <= invert ^ (cx < screen_width + hsync_pulse_start);
     else
         vsync <= invert ^ (cy >= screen_height + vsync_pulse_start && cy < screen_height + vsync_pulse_start + vsync_pulse_size);
@@ -258,8 +261,10 @@ generate
             end
             else
             begin
-                video_guard <= cx >= frame_width - 2 && cx < frame_width && (cy == frame_height - 1 || cy < screen_height);
-                video_preamble <= cx >= frame_width - 10 && cx < frame_width - 2 && (cy == frame_height - 1 || cy < screen_height);
+                // La ultima linea activa no tiene video posterior: no se puede
+                // emitir alli un preambulo ni una banda de guarda de video.
+                video_guard <= cx >= frame_width - 2 && cx < frame_width && (cy == frame_height - 1 || cy < screen_height - 1);
+                video_preamble <= cx >= frame_width - 10 && cx < frame_width - 2 && (cy == frame_height - 1 || cy < screen_height - 1);
             end
         end
 
@@ -268,7 +273,7 @@ generate
         logic [4:0] num_packets_alongside;
         always_comb
         begin
-            max_num_packets_alongside = ((frame_width - screen_width) /* VD period */ - 2 /* V guard */ - 8 /* V preamble */ - 12 /* 12px control period */ - 2 /* DI guard */ - 2 /* DI start guard */ - 8 /* DI premable */) / 32;
+            max_num_packets_alongside = ((frame_width - screen_width) /* VD period */ - 2 /* V guard */ - 8 /* V preamble */ - 12 /* 12px control period */ - 2 /* DI guard */ - 2 /* DI start guard */ - 8 /* DI premable */ - 4 /* control antes del preambulo de isla */) / 32;
             if (max_num_packets_alongside > 18)
                 num_packets_alongside = 5'd18;
             else
@@ -276,9 +281,11 @@ generate
         end
 
         logic data_island_period_instantaneous;
-        assign data_island_period_instantaneous = num_packets_alongside > 0 && cx >= screen_width + 10 && cx < screen_width + 10 + num_packets_alongside * 32;
+        // Cuatro caracteres extra de control antes del preambulo: HDMI 1.4
+        // exige al menos 12, no los 8 que daba la copia original.
+        assign data_island_period_instantaneous = num_packets_alongside > 0 && cx >= screen_width + 14 && cx < screen_width + 14 + num_packets_alongside * 32;
         logic packet_enable;
-        assign packet_enable = data_island_period_instantaneous && 5'(cx + screen_width + 22) == 5'd0;
+        assign packet_enable = data_island_period_instantaneous && 5'(cx + screen_width + 18) == 5'd0;
 
         logic data_island_guard = 0;
         logic data_island_preamble = 0;
@@ -293,8 +300,8 @@ generate
             end
             else
             begin
-                data_island_guard <= num_packets_alongside > 0 && ((cx >= screen_width + 8 && cx < screen_width + 10) || (cx >= screen_width + 10 + num_packets_alongside * 32 && cx < screen_width + 10 + num_packets_alongside * 32 + 2));
-                data_island_preamble <= num_packets_alongside > 0 && cx >= screen_width && cx < screen_width + 8;
+                data_island_guard <= num_packets_alongside > 0 && ((cx >= screen_width + 12 && cx < screen_width + 14) || (cx >= screen_width + 14 + num_packets_alongside * 32 && cx < screen_width + 14 + num_packets_alongside * 32 + 2));
+                data_island_preamble <= num_packets_alongside > 0 && cx >= screen_width + 4 && cx < screen_width + 12;
                 data_island_period <= data_island_period_instantaneous;
             end
         end

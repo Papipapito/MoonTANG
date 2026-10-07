@@ -1,0 +1,284 @@
+<!-- wp:html -->
+<style>
+.repa-langbar{display:flex;gap:6px;justify-content:flex-end;margin:0 0 16px}
+.repa-lang-btn{border:1px solid #cfcfcf;background:#fff;padding:4px 14px;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px;color:#555;line-height:1.6}
+.repa-lang-btn.active{background:#185FA5;color:#fff;border-color:#185FA5}
+.repa-en{display:none}
+body[data-repalang="en"] .repa-en{display:block}
+body[data-repalang="en"] span.repa-en{display:inline}
+body[data-repalang="en"] .repa-es{display:none}
+</style>
+<div class="repa-langbar" aria-label="Idioma / Language">
+<button type="button" class="repa-lang-btn" data-lang="es">ES</button>
+<button type="button" class="repa-lang-btn" data-lang="en">EN</button>
+</div>
+<script>
+(function(){
+function apply(l){document.body.setAttribute('data-repalang',l);var b=document.querySelectorAll('.repa-lang-btn');for(var i=0;i<b.length;i++){b[i].classList.toggle('active',b[i].getAttribute('data-lang')===l);}}
+var s='es';try{s=localStorage.getItem('repaLang')||'es';}catch(e){}
+apply(s);
+document.addEventListener('click',function(e){var t=e.target.closest?e.target.closest('.repa-lang-btn'):null;if(!t)return;var l=t.getAttribute('data-lang');try{localStorage.setItem('repaLang',l);}catch(e){}apply(l);});
+})();
+</script>
+<!-- /wp:html -->
+
+<!-- wp:paragraph {"className":"repa-es"} -->
+<p class="repa-es"><strong>MoonTANG</strong> convierte un cartucho <strong>WonderTANG 2.02b</strong> con su <a href="https://wiki.sipeed.com/hardware/en/tang/tang-nano-20k/nano-20k.html" target="_blank" rel="noopener">Sipeed Tang Nano 20K</a> en un <strong>MoonSound</strong>: un OPL4 completo, con el FM de 18 canales del OPL3 y las 24 voces de ondas (wavetable), enchufado en un slot de tu MSX de verdad. Y, si quieres, con un <strong>MSX-Audio</strong> al lado, en el mismo cartucho.</p>
+<!-- /wp:paragraph -->
+<!-- wp:paragraph {"className":"repa-en"} -->
+<p class="repa-en"><strong>MoonTANG</strong> turns a <strong>WonderTANG 2.02b</strong> cartridge with its <a href="https://wiki.sipeed.com/hardware/en/tang/tang-nano-20k/nano-20k.html" target="_blank" rel="noopener">Sipeed Tang Nano 20K</a> into a <strong>MoonSound</strong>: a full OPL4, with the 18-channel OPL3 FM and the 24 wavetable voices, plugged into a slot of your real MSX. And, if you want, with an <strong>MSX-Audio</strong> next to it, in the same cartridge.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph {"className":"repa-es"} -->
+<p class="repa-es">Es el mismo OPL4 que lleva dentro el <a href="https://msx.barcelona/msximus-msx2-fpga/">MSXimus</a>, sacado aparte para que funcione solo, como cartucho. Solo hace eso: sonido. Nada de megaROM, ampliación de RAM ni Nextor; para eso está <a href="https://github.com/buppu3/tnCart" target="_blank" rel="noopener">tnCart</a>.</p>
+<!-- /wp:paragraph -->
+<!-- wp:paragraph {"className":"repa-en"} -->
+<p class="repa-en">It is the same OPL4 that lives inside the <a href="https://msx.barcelona/msximus-msx2-fpga/">MSXimus</a>, taken out so it runs on its own, as a cartridge. It does just that: sound. No megaROM, no RAM expansion, no Nextor; for those there is <a href="https://github.com/buppu3/tnCart" target="_blank" rel="noopener">tnCart</a>.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph {"className":"repa-es"} -->
+<p class="repa-es">⚠️ <strong>MoonTANG es experimental.</strong> Si lo pruebas, cuéntanos cómo te va —bien o mal— en los comentarios o abriendo un issue en [ENLACE REPOSITORIO].</p>
+<!-- /wp:paragraph -->
+<!-- wp:paragraph {"className":"repa-en"} -->
+<p class="repa-en">⚠️ <strong>MoonTANG is experimental.</strong> If you try it, tell us how it goes —good or bad— in the comments or by opening an issue at [ENLACE REPOSITORIO].</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading"><span class="repa-es">🌙 Qué hay dentro</span><span class="repa-en">🌙 What is inside</span></h2>
+<!-- /wp:heading -->
+
+<!-- wp:list {"className":"repa-es"} -->
+<ul class="wp-block-list repa-es"><li><strong>MoonSound (OPL4, YMF278B)</strong>, en las tres versiones:<ul><li><strong>FM</strong>: el OPL3, 18 canales, en los puertos <code>C4h–C7h</code>. Funciona sin nada más.</li><li><strong>Ondas</strong>: 24 voces PCM que tocan las muestras de la ROM <strong>YRW801</strong> de Yamaha (2&nbsp;MB) y de 2&nbsp;MB de RAM de samples, en los puertos <code>7Eh–7Fh</code>. Necesitan tu propia YRW801 (ver más abajo).</li></ul></li><li><strong>MSX-Audio (Y8950)</strong>, en las versiones 1 y 2: FM de 9 canales (con modo ritmo) y <strong>ADPCM con 256&nbsp;KB</strong> de RAM de samples, lo máximo que direcciona el chip, en los puertos <code>C0h–C1h</code> (la primera unidad MSX-Audio). No necesita ninguna ROM.</li><li>El cartucho solo responde a <strong>puertos de E/S</strong>: no ocupa memoria del slot.</li><li><strong>Sonido por el propio MSX</strong>, en mono: sale por el amplificador de la Tang y el puente J3 hacia la línea <code>SOUNDIN</code> del slot. En las versiones con HDMI sale además en <strong>estéreo por el HDMI</strong> de la Tang.</li></ul>
+<!-- /wp:list -->
+<!-- wp:list {"className":"repa-en"} -->
+<ul class="wp-block-list repa-en"><li><strong>MoonSound (OPL4, YMF278B)</strong>, in all three versions:<ul><li><strong>FM</strong>: the OPL3, 18 channels, on ports <code>C4h–C7h</code>. It works with nothing else.</li><li><strong>Wave</strong>: 24 PCM voices playing the samples of Yamaha's <strong>YRW801</strong> ROM (2&nbsp;MB) and of 2&nbsp;MB of sample RAM, on ports <code>7Eh–7Fh</code>. They need your own YRW801 (see below).</li></ul></li><li><strong>MSX-Audio (Y8950)</strong>, in versions 1 and 2: 9-channel FM (rhythm mode included) and <strong>ADPCM with 256&nbsp;KB</strong> of sample RAM, the most the chip can address, on ports <code>C0h–C1h</code> (the first MSX-Audio unit). It needs no ROM.</li><li>The cartridge only answers <strong>I/O ports</strong>: it takes no slot memory.</li><li><strong>Sound through the MSX itself</strong>, in mono: it goes through the Tang's amplifier and jumper J3 into the slot's <code>SOUNDIN</code> line. In the HDMI versions it also comes out in <strong>stereo over the Tang's HDMI</strong>.</li></ul>
+<!-- /wp:list -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading"><span class="repa-es">🎛️ Las tres versiones</span><span class="repa-en">🎛️ The three versions</span></h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph {"className":"repa-es"} -->
+<p class="repa-es">Las tres son para la <strong>WonderTANG 2.02b</strong> y se graban igual. Eliges una; para cambiar de versión basta con grabar otro <code>.fs</code>.</p>
+<!-- /wp:paragraph -->
+<!-- wp:paragraph {"className":"repa-en"} -->
+<p class="repa-en">All three are for the <strong>WonderTANG 2.02b</strong> and are flashed the same way. You pick one; to switch versions you just flash another <code>.fs</code>.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:table {"hasFixedLayout":false,"className":"repa-es"} -->
+<figure class="wp-block-table repa-es"><table><thead><tr><th>Versión</th><th>Qué lleva</th><th>Sonido</th><th>Para quién</th></tr></thead><tbody><tr><td><strong>1 · OPL4 + MSX-Audio</strong></td><td>MoonSound + MSX-Audio</td><td>Por el MSX (mono)</td><td>Para el día a día, escuchando por los altavoces del MSX.</td></tr><tr><td><strong>2 · OPL4 + MSX-Audio + HDMI</strong></td><td>MoonSound + MSX-Audio + pantalla HDMI con vúmetro de 7 barras</td><td>Por el MSX (mono) y por HDMI (estéreo)</td><td>Si lo quieres todo: además ves en pantalla si la YRW801 ha cargado, si llega el reloj del MSX y qué suena.</td></tr><tr><td><strong>3 · OPL4 + HDMI</strong></td><td>MoonSound + pantalla HDMI con vúmetro de 6 barras</td><td>Por el MSX (mono) y por HDMI (estéreo)</td><td>Si ya tienes un MSX-Audio de verdad (Philips Music Module, Panasonic FS-CA1, Toshiba HX-MU900) en otro slot: los dos responderían en <code>C0h–C1h</code> y chocarían.</td></tr></tbody></table></figure>
+<!-- /wp:table -->
+<!-- wp:table {"hasFixedLayout":false,"className":"repa-en"} -->
+<figure class="wp-block-table repa-en"><table><thead><tr><th>Version</th><th>What it has</th><th>Sound</th><th>Who it is for</th></tr></thead><tbody><tr><td><strong>1 · OPL4 + MSX-Audio</strong></td><td>MoonSound + MSX-Audio</td><td>Through the MSX (mono)</td><td>Everyday use, listening through the MSX's own speakers.</td></tr><tr><td><strong>2 · OPL4 + MSX-Audio + HDMI</strong></td><td>MoonSound + MSX-Audio + HDMI screen with a 7-bar VU meter</td><td>Through the MSX (mono) and HDMI (stereo)</td><td>If you want it all: you also see on screen whether the YRW801 loaded, whether the MSX clock is there and what is playing.</td></tr><tr><td><strong>3 · OPL4 + HDMI</strong></td><td>MoonSound + HDMI screen with a 6-bar VU meter</td><td>Through the MSX (mono) and HDMI (stereo)</td><td>If you already have a real MSX-Audio (Philips Music Module, Panasonic FS-CA1, Toshiba HX-MU900) in another slot: both would answer at <code>C0h–C1h</code> and clash.</td></tr></tbody></table></figure>
+<!-- /wp:table -->
+
+<!-- wp:paragraph {"className":"repa-es"} -->
+<p class="repa-es">Visto desde el MSX, el MoonSound es exactamente el mismo en las tres. Estos ficheros son <strong>solo para la WonderTANG 2.02b</strong>: no los grabes en otra tarjeta con Tang Nano 20K, porque los pines no coinciden.</p>
+<!-- /wp:paragraph -->
+<!-- wp:paragraph {"className":"repa-en"} -->
+<p class="repa-en">Seen from the MSX, the MoonSound is exactly the same in all three. These files are <strong>for the WonderTANG 2.02b only</strong>: do not flash them on any other Tang Nano 20K board, because the pins do not match.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading"><span class="repa-es">📺 La pantalla HDMI</span><span class="repa-en">📺 The HDMI screen</span></h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph {"className":"repa-es"} -->
+<p class="repa-es">En las versiones 2 y 3, conecta una tele o un monitor HDMI con altavoces al conector HDMI de la Tang. Es opcional: sin nada conectado, el cartucho funciona igual.</p>
+<!-- /wp:paragraph -->
+<!-- wp:paragraph {"className":"repa-en"} -->
+<p class="repa-en">In versions 2 and 3, plug a TV or an HDMI monitor with speakers into the Tang's HDMI connector. It is optional: with nothing connected, the cartridge works just the same.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:image {"id":1483,"sizeSlug":"large","linkDestination":"none"} -->
+<figure class="wp-block-image size-large"><img src="https://msx.barcelona/wp-content/uploads/2026/10/moontang_hdmi_opl4_msxaudio.webp" alt="Pantalla HDMI de MoonTANG con el vúmetro de siete barras: FM, WAVE, MSX-AUDIO y OUT" class="wp-image-1483"/><figcaption class="wp-element-caption"><span class="repa-es">Versión 2 (OPL4 + MSX-Audio + HDMI): siete barras, con la del MSX-AUDIO. Imagen generada desde la señal HDMI (no es una foto).</span><span class="repa-en">Version 2 (OPL4 + MSX-Audio + HDMI): seven bars, including the MSX-AUDIO one. Image generated from the HDMI signal (not a photo).</span></figcaption></figure>
+<!-- /wp:image -->
+
+<!-- wp:image {"id":1484,"sizeSlug":"large","linkDestination":"none"} -->
+<figure class="wp-block-image size-large"><img src="https://msx.barcelona/wp-content/uploads/2026/10/moontang_hdmi_opl4.webp" alt="Pantalla HDMI de MoonTANG con el vúmetro de seis barras: FM, WAVE y OUT" class="wp-image-1484"/><figcaption class="wp-element-caption"><span class="repa-es">Versión 3 (OPL4 + HDMI): seis barras. Imagen generada desde la señal HDMI (no es una foto).</span><span class="repa-en">Version 3 (OPL4 + HDMI): six bars. Image generated from the HDMI signal (not a photo).</span></figcaption></figure>
+<!-- /wp:image -->
+
+<!-- wp:list {"className":"repa-es"} -->
+<ul class="wp-block-list repa-es"><li><strong>Barras</strong>: <strong>FM</strong> izquierda/derecha, <strong>WAVE</strong> (las ondas) izquierda/derecha y <strong>OUT</strong>, la mezcla final. En la versión 2 hay una séptima, <strong>MSX-AUDIO</strong> (mono), con lo que suma el Y8950. Cada barra tiene 28 segmentos de 1,5&nbsp;dB; el segmento brillante marca el pico.</li><li><strong>YRW801</strong>: <code>OK</code> · <code>...</code> (copiándose) · <code>NO VALIDA</code> (la copia terminó, pero lo que hay en la flash no es la YRW801: flash vacía, una megaROM de otro firmware, un fichero cortado) · <code>ERROR</code> (la copia no terminó: la flash o la SDRAM no responden).</li><li><strong>MSX</strong>: <code>OK</code> si llega el reloj del MSX, <code>--</code> si no.</li><li>Imagen de 720×480 a 60&nbsp;Hz, marcada como 16:9; sonido estéreo a 48&nbsp;kHz. Un monitor que solo acepte DVI no la mostrará.</li></ul>
+<!-- /wp:list -->
+<!-- wp:list {"className":"repa-en"} -->
+<ul class="wp-block-list repa-en"><li><strong>Bars</strong>: <strong>FM</strong> left/right, <strong>WAVE</strong> (the wavetable) left/right and <strong>OUT</strong>, the final mix. Version 2 has a seventh one, <strong>MSX-AUDIO</strong> (mono), with what the Y8950 adds. Each bar has 28 segments of 1.5&nbsp;dB; the bright segment marks the peak.</li><li><strong>YRW801</strong>: <code>OK</code> · <code>...</code> (being copied) · <code>NO VALIDA</code> (the copy finished, but what is in the flash is not the YRW801: a blank flash, a megaROM left by another firmware, a truncated file) · <code>ERROR</code> (the copy did not finish: the flash or the SDRAM is not answering).</li><li><strong>MSX</strong>: <code>OK</code> when the MSX clock is there, <code>--</code> when it is not.</li><li>720×480 at 60&nbsp;Hz, flagged as 16:9; stereo sound at 48&nbsp;kHz. A DVI-only monitor will not show it.</li></ul>
+<!-- /wp:list -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading"><span class="repa-es">🧰 Qué necesitas</span><span class="repa-en">🧰 What you need</span></h2>
+<!-- /wp:heading -->
+
+<!-- wp:list {"className":"repa-es"} -->
+<ul class="wp-block-list repa-es"><li>Una <a href="https://github.com/lfantoniosi/WonderTANG" target="_blank" rel="noopener">WonderTANG</a> <strong>2.02b</strong> con su <strong>Tang Nano 20K</strong>.</li><li>El <strong>puente J3 soldado</strong> a las pistas del altavoz de la Tang. Sin él no hay sonido por el MSX (por HDMI, sí).</li><li><strong>Tu copia de la YRW801</strong>, en un fichero <code>yrw801.bin</code> de 2&nbsp;MB, por ejemplo volcada de tu MoonSound. Tiene copyright: no la incluimos ni la distribuimos. Sin ella el FM y el MSX-Audio funcionan; solo se queda muda la parte de ondas.</li><li>Un PC con <a href="https://www.gowinsemi.com/en/support/download_eda/" target="_blank" rel="noopener">Gowin Programmer</a> (Windows) u <a href="https://github.com/trabucayre/openFPGALoader" target="_blank" rel="noopener">openFPGALoader</a> (Linux, macOS o Windows).</li><li>Un cable <strong>USB-C</strong> que lleve datos, no solo carga.</li><li>Para las versiones 2 y 3, si quieres ver la pantalla: una tele o un monitor HDMI.</li></ul>
+<!-- /wp:list -->
+<!-- wp:list {"className":"repa-en"} -->
+<ul class="wp-block-list repa-en"><li>A <a href="https://github.com/lfantoniosi/WonderTANG" target="_blank" rel="noopener">WonderTANG</a> <strong>2.02b</strong> with its <strong>Tang Nano 20K</strong>.</li><li><strong>Jumper J3 soldered</strong> to the Tang's speaker pads. Without it there is no sound through the MSX (there is over HDMI).</li><li><strong>Your own copy of the YRW801</strong>, as a 2&nbsp;MB file <code>yrw801.bin</code>, for example dumped from your MoonSound. It is copyrighted: we do not include or distribute it. Without it the FM and the MSX-Audio work; only the wavetable stays silent.</li><li>A PC with <a href="https://www.gowinsemi.com/en/support/download_eda/" target="_blank" rel="noopener">Gowin Programmer</a> (Windows) or <a href="https://github.com/trabucayre/openFPGALoader" target="_blank" rel="noopener">openFPGALoader</a> (Linux, macOS or Windows).</li><li>A <strong>USB-C</strong> cable that carries data, not just power.</li><li>For versions 2 and 3, if you want to see the screen: a TV or an HDMI monitor.</li></ul>
+<!-- /wp:list -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading"><span class="repa-es">⚡ Cómo flashear</span><span class="repa-en">⚡ How to flash it</span></h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph {"className":"repa-es"} -->
+<p class="repa-es">Se graban dos cosas en la flash de la Tang: el <code>.fs</code> de la versión elegida en <code>0x000000</code> y tu <code>yrw801.bin</code> en <code>0x200000</code>. Hazlo <strong>con el MSX apagado</strong> (o con la tarjeta fuera del MSX): la Tang se alimenta por el USB-C.</p>
+<!-- /wp:paragraph -->
+<!-- wp:paragraph {"className":"repa-en"} -->
+<p class="repa-en">Two things go into the Tang's flash: the <code>.fs</code> of the version you chose at <code>0x000000</code> and your <code>yrw801.bin</code> at <code>0x200000</code>. Do it <strong>with the MSX switched off</strong> (or with the board out of the MSX): the Tang is powered from USB-C.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading"><span class="repa-es">Con Gowin Programmer (Windows)</span><span class="repa-en">With Gowin Programmer (Windows)</span></h3>
+<!-- /wp:heading -->
+
+<!-- wp:list {"ordered":true,"className":"repa-es"} -->
+<ol class="wp-block-list repa-es"><li>Conecta la Tang Nano 20K al PC con el cable USB-C y abre <strong>Gowin Programmer</strong>.</li><li><strong>El bitstream</strong>: pulsa <em>Add Device</em> y elige la serie <strong>GW2AR</strong>. Haz doble clic en el dispositivo y pon <em>Access Mode</em> = <strong>External Flash Mode</strong>, <em>Operation</em> = <strong>exFlash Erase, Program thru GAO-Bridge</strong>. Elige el <code>.fs</code> de tu versión, <em>Device</em> = <strong>Generic Flash</strong> y dirección <code>0x000000</code>. <em>Save</em>.</li><li><strong>La YRW801</strong>: <em>Add Device</em> otra vez, serie <strong>GW2AR</strong>, <em>Access Mode</em> = <strong>External Flash Mode</strong>, <em>Operation</em> = <strong>exFlash C Bin Erase, Program thru GAO-Bridge</strong>. Elige tu <code>yrw801.bin</code>, <em>Device</em> = <strong>Generic Flash</strong> y dirección <code>0x200000</code>. <em>Save</em>.</li><li>Deja activado solo el primer dispositivo de la lista y pulsa <em>Program/Configure</em> (menú <em>Edit</em>). Cuando acabe, deja activado solo el segundo y repite.</li><li>Desconecta el USB, pon el cartucho en el MSX (apagado) y enciéndelo.</li></ol>
+<!-- /wp:list -->
+<!-- wp:list {"ordered":true,"className":"repa-en"} -->
+<ol class="wp-block-list repa-en"><li>Connect the Tang Nano 20K to the PC with the USB-C cable and open <strong>Gowin Programmer</strong>.</li><li><strong>The bitstream</strong>: click <em>Add Device</em> and pick the <strong>GW2AR</strong> series. Double-click the device and set <em>Access Mode</em> = <strong>External Flash Mode</strong>, <em>Operation</em> = <strong>exFlash Erase, Program thru GAO-Bridge</strong>. Pick the <code>.fs</code> of your version, <em>Device</em> = <strong>Generic Flash</strong> and address <code>0x000000</code>. <em>Save</em>.</li><li><strong>The YRW801</strong>: <em>Add Device</em> again, <strong>GW2AR</strong> series, <em>Access Mode</em> = <strong>External Flash Mode</strong>, <em>Operation</em> = <strong>exFlash C Bin Erase, Program thru GAO-Bridge</strong>. Pick your <code>yrw801.bin</code>, <em>Device</em> = <strong>Generic Flash</strong> and address <code>0x200000</code>. <em>Save</em>.</li><li>Leave only the first device in the list enabled and click <em>Program/Configure</em> (<em>Edit</em> menu). When it finishes, enable only the second one and repeat.</li><li>Unplug the USB, put the cartridge in the MSX (switched off) and power it on.</li></ol>
+<!-- /wp:list -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading"><span class="repa-es">Con openFPGALoader</span><span class="repa-en">With openFPGALoader</span></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph {"className":"repa-es"} -->
+<p class="repa-es">Con la Tang conectada por USB-C, primero el <code>.fs</code> de tu versión y después la YRW801 (<code>2097152</code> es <code>0x200000</code>):</p>
+<!-- /wp:paragraph -->
+<!-- wp:paragraph {"className":"repa-en"} -->
+<p class="repa-en">With the Tang connected over USB-C, first the <code>.fs</code> of your version and then the YRW801 (<code>2097152</code> is <code>0x200000</code>):</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:code -->
+<pre class="wp-block-code"><code>openFPGALoader -f -b tangnano20k --external-flash moontang_version.fs
+openFPGALoader -b tangnano20k --external-flash -o 2097152 yrw801.bin</code></pre>
+<!-- /wp:code -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading"><span class="repa-es">Bueno saberlo</span><span class="repa-en">Good to know</span></h3>
+<!-- /wp:heading -->
+
+<!-- wp:list {"className":"repa-es"} -->
+<ul class="wp-block-list repa-es"><li><strong>La YRW801 se graba una vez y vale para las tres versiones.</strong> Para cambiar de versión, graba solo el <code>.fs</code>.</li><li><strong>Comprueba la YRW801 después de cada grabación.</strong> Algunas herramientas, al borrar la flash para el <code>.fs</code>, borran también la zona que va detrás. Además, <code>0x200000</code> es donde otros firmwares guardan sus cosas (tnCart su megaROM, el MSXnano su pack de BIOS): si has usado la Tang con otro firmware, vuelve a grabar <code>yrw801.bin</code>. La pantalla HDMI, el LED y el programa <code>MT4YRW</code> te dicen si está bien.</li><li><strong>Prueba sin riesgo</strong>: en Gowin Programmer puedes cargar el <code>.fs</code> en la <strong>SRAM</strong> en vez de en la flash. Se pierde al apagar y la tarjeta vuelve al firmware que tuviera grabado. Hazlo con el MSX apagado, o reinicia el MSX después.</li><li><strong>Si el Programmer no ve la Tang</strong> porque lleva un firmware que usa los pines JTAG, mantén pulsado el botón <strong>S1</strong> antes de conectar el USB-C y durante toda la grabación. MoonTANG no usa los pines JTAG, así que con MoonTANG ya grabado no debería hacer falta.</li><li>En Linux, el Programmer de Gowin no va bien: usa openFPGALoader.</li></ul>
+<!-- /wp:list -->
+<!-- wp:list {"className":"repa-en"} -->
+<ul class="wp-block-list repa-en"><li><strong>The YRW801 is flashed once and works for all three versions.</strong> To switch versions, flash just the <code>.fs</code>.</li><li><strong>Check the YRW801 after every flash.</strong> Some tools, when erasing the flash for the <code>.fs</code>, also wipe the area that comes after it. Also, <code>0x200000</code> is where other firmwares keep their own data (tnCart its megaROM, the MSXnano its BIOS pack): if you have used the Tang with another firmware, flash <code>yrw801.bin</code> again. The HDMI screen, the LED and the <code>MT4YRW</code> program tell you whether it is fine.</li><li><strong>Risk-free test</strong>: in Gowin Programmer you can load the <code>.fs</code> into <strong>SRAM</strong> instead of the flash. It is lost at power-off and the board goes back to whatever firmware it had flashed. Do it with the MSX off, or reset the MSX afterwards.</li><li><strong>If the Programmer does not see the Tang</strong> because it carries a firmware that uses the JTAG pins, hold the <strong>S1</strong> button before plugging in the USB-C cable and during the whole flashing. MoonTANG does not use the JTAG pins, so once MoonTANG is flashed you should not need this.</li><li>On Linux, Gowin's Programmer does not work well: use openFPGALoader.</li></ul>
+<!-- /wp:list -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading"><span class="repa-es">✅ Cómo comprobar que funciona</span><span class="repa-en">✅ How to check it works</span></h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph {"className":"repa-es"} -->
+<p class="repa-es">Al encender el MSX, unos <strong>3 segundos de pantalla negra</strong> son normales: la FPGA está cargando y el MSX espera. Después, durante unos 2 segundos, la tarjeta copia la YRW801 de la flash a la SDRAM; en ese rato la parte de ondas todavía no se detecta. Espera a que el LED se quede fijo.</p>
+<!-- /wp:paragraph -->
+<!-- wp:paragraph {"className":"repa-en"} -->
+<p class="repa-en">When you power on the MSX, about <strong>3 seconds of black screen</strong> is normal: the FPGA is loading and the MSX waits. Then, for about 2 seconds, the board copies the YRW801 from flash to SDRAM; during that time the wavetable cannot be detected yet. Wait until the LED stays on.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:table {"hasFixedLayout":false,"className":"repa-es"} -->
+<figure class="wp-block-table repa-es"><table><thead><tr><th>LED</th><th>Qué significa</th></tr></thead><tbody><tr><td>Fijo</td><td>Listo y el MSX en marcha</td></tr><tr><td>Destello corto cada 0,6&nbsp;s</td><td>Listo, pero no llega el reloj del MSX (cartucho fuera o MSX apagado)</td></tr><tr><td>Parpadeo lento</td><td>Copiando la YRW801 de la flash a la SDRAM (unos 2&nbsp;s)</td></tr><tr><td>Parpadeo rápido</td><td>Arrancando la SDRAM</td></tr><tr><td>Ráfagas de parpadeo rápido cada 0,6&nbsp;s</td><td>Copiada, pero lo que hay en la flash no es la YRW801</td></tr><tr><td>Doble destello</td><td>La copia no terminó (la flash o la SDRAM no responden)</td></tr><tr><td>Apagado</td><td>Un PLL no ha enganchado</td></tr></tbody></table></figure>
+<!-- /wp:table -->
+<!-- wp:table {"hasFixedLayout":false,"className":"repa-en"} -->
+<figure class="wp-block-table repa-en"><table><thead><tr><th>LED</th><th>Meaning</th></tr></thead><tbody><tr><td>Steady on</td><td>Ready and the MSX is running</td></tr><tr><td>Short flash every 0.6&nbsp;s</td><td>Ready, but no clock from the MSX (cartridge out, or MSX off)</td></tr><tr><td>Slow blink</td><td>Copying the YRW801 from flash to SDRAM (about 2&nbsp;s)</td></tr><tr><td>Fast blink</td><td>SDRAM starting up</td></tr><tr><td>Bursts of fast blinking every 0.6&nbsp;s</td><td>Copied, but what is in the flash is not the YRW801</td></tr><tr><td>Double flash</td><td>The copy did not finish (the flash or the SDRAM is not answering)</td></tr><tr><td>Off</td><td>A PLL did not lock</td></tr></tbody></table></figure>
+<!-- /wp:table -->
+
+<!-- wp:paragraph {"className":"repa-es"} -->
+<p class="repa-es">Una pista rápida: si <strong>suena el FM pero no las ondas</strong>, mira la YRW801 (flash o SDRAM). Si <strong>no suena nada</strong>, mira el bus o la alimentación. La WonderTANG alimenta la Tang a través de un diodo: si la Tang no arranca bien, revisa primero los 5&nbsp;V del slot.</p>
+<!-- /wp:paragraph -->
+<!-- wp:paragraph {"className":"repa-en"} -->
+<p class="repa-en">A quick hint: if <strong>the FM plays but the wavetable does not</strong>, look at the YRW801 (flash or SDRAM). If <strong>nothing plays at all</strong>, look at the bus or the power. The WonderTANG powers the Tang through a diode: if the Tang does not start reliably, check the slot's 5&nbsp;V first.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading"><span class="repa-es">Programas de prueba</span><span class="repa-en">Test programs</span></h3>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph {"className":"repa-es"} -->
+<p class="repa-es">Ocho programas en MSX-BASIC [DESCARGA PROGRAMAS DE PRUEBA]. Cada uno dice lo que ha leído y da un veredicto (<code>OK</code> / <code>FALLO</code>). Cárgalos con <code>LOAD "MT1DET.ASC",R</code>, a <strong>3,58&nbsp;MHz</strong>, con el LED ya fijo (o la pantalla en <code>YRW801 OK</code>), y en este orden:</p>
+<!-- /wp:paragraph -->
+<!-- wp:paragraph {"className":"repa-en"} -->
+<p class="repa-en">Eight MSX-BASIC programs [DESCARGA PROGRAMAS DE PRUEBA]. Each one prints what it read and a verdict (<code>OK</code> / <code>FALLO</code>, Spanish for "fail"). Load them with <code>LOAD "MT1DET.ASC",R</code>, at <strong>3.58&nbsp;MHz</strong>, once the LED is steady (or the screen shows <code>YRW801 OK</code>), in this order:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:table {"hasFixedLayout":false,"className":"repa-es"} -->
+<figure class="wp-block-table repa-es"><table><thead><tr><th>Programa</th><th>Qué comprueba</th></tr></thead><tbody><tr><td><code>MT1DET</code></td><td>Detección: responden los cuatro puertos FM, los registros FM se releen bien, NEW2 y el ID de ondas</td></tr><tr><td><code>MT2FM</code></td><td>Un seno FM a 440&nbsp;Hz (compruébalo con un afinador), una escala y el panorama izquierda/derecha (solo se oye por HDMI)</td></tr><tr><td><code>MT3TMR</code></td><td>Los temporizadores del OPL3, sin interrupciones</td></tr><tr><td><code>MT3INT</code></td><td>La interrupción del temporizador 1 por <code>/INT</code>. Solo si <code>MT3TMR</code> ha dado OK</td></tr><tr><td><code>MT4YRW</code></td><td>La YRW801 en la SDRAM. <strong>Pásalo después de cada grabación</strong></td></tr><tr><td><code>MT5RAM</code></td><td>Escribe y relee la RAM de samples</td></tr><tr><td><code>MT6PCM</code></td><td>Una nota PCM con la onda 0 de la YRW801</td></tr><tr><td><code>MT7AUD</code></td><td>El MSX-Audio (versiones 1 y 2): estado, temporizadores, una nota FM a 440&nbsp;Hz, ADPCM, los 256&nbsp;KB de RAM y que no molesta al OPL4. Con la versión 3 dice que no hay MSX-Audio y para</td></tr></tbody></table></figure>
+<!-- /wp:table -->
+<!-- wp:table {"hasFixedLayout":false,"className":"repa-en"} -->
+<figure class="wp-block-table repa-en"><table><thead><tr><th>Program</th><th>What it checks</th></tr></thead><tbody><tr><td><code>MT1DET</code></td><td>Detection: the four FM ports answer, FM registers read back, NEW2 and the wave ID</td></tr><tr><td><code>MT2FM</code></td><td>An FM sine at 440&nbsp;Hz (check it with a tuner), a scale and left/right panning (heard on HDMI only)</td></tr><tr><td><code>MT3TMR</code></td><td>The OPL3 timers, with interrupts off</td></tr><tr><td><code>MT3INT</code></td><td>The timer 1 interrupt through <code>/INT</code>. Only if <code>MT3TMR</code> passed</td></tr><tr><td><code>MT4YRW</code></td><td>The YRW801 in SDRAM. <strong>Run it after every flash</strong></td></tr><tr><td><code>MT5RAM</code></td><td>Writes and reads back the sample RAM</td></tr><tr><td><code>MT6PCM</code></td><td>A PCM note with wave 0 of the YRW801</td></tr><tr><td><code>MT7AUD</code></td><td>The MSX-Audio (versions 1 and 2): status, timers, an FM note at 440&nbsp;Hz, ADPCM, the 256&nbsp;KB of RAM and that it leaves the OPL4 alone. With version 3 it says there is no MSX-Audio and stops</td></tr></tbody></table></figure>
+<!-- /wp:table -->
+
+<!-- wp:paragraph {"className":"repa-es"} -->
+<p class="repa-es">Usa estos y no los programas de prueba de otros proyectos OPL4 en FPGA: algunos arrancan un temporizador sin enmascararlo y sin rutina de interrupción, y cuelgan el MSX por <code>/INT</code>, igual que lo haría un MoonSound de verdad.</p>
+<!-- /wp:paragraph -->
+<!-- wp:paragraph {"className":"repa-en"} -->
+<p class="repa-en">Use these rather than the test programs of other OPL4 FPGA projects: some of them start a timer without masking it and without an interrupt handler, and hang the MSX through <code>/INT</code>, just as a real MoonSound would.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading"><span class="repa-es">🎵 Software y límites</span><span class="repa-en">🎵 Software and limits</span></h2>
+<!-- /wp:heading -->
+
+<!-- wp:list {"className":"repa-es"} -->
+<ul class="wp-block-list repa-es"><li><strong>MoonSound</strong>: lo que funciona en un MoonSound debería funcionar aquí: <strong>VGMPlay</strong>, <strong>MoonBlaster Wave</strong>, juegos y demos. Una buena prueba: VGMPlay dos veces seguidas saliendo a DOS sin reiniciar, MoonBlaster Wave, y un reinicio del MSX seguido de <code>MT4YRW</code>.</li><li><strong>MSX-Audio</strong> (versiones 1 y 2): debería funcionar el software que habla directamente con el chip: <strong>VGMPlay</strong> con música de MSX-Audio, <strong>MoonBlaster 1.4</strong> (FM y samples ADPCM) y los juegos que escriben en sus puertos.</li><li><strong>Sin BIOS de MSX-Audio</strong>: el cartucho solo responde a los puertos. Lo que necesita esa ROM, como <strong>FAC SoundTracker</strong>, no la encuentra.</li><li>Solo la <strong>primera unidad</strong> MSX-Audio (<code>C0h–C1h</code>); <code>C2h–C3h</code> quedan libres. No están la grabación (el ADC), los registros del DAC ni los puertos de teclado y E/S del chip.</li><li>¿Tienes un <strong>MSX-Audio de verdad</strong> enchufado? Usa la <strong>versión 3</strong>.</li><li><strong>Turbo</strong>: lo recomendado es 3,58&nbsp;MHz. A partir de 5,37&nbsp;MHz puede fallar la <em>lectura</em> de la memoria de ondas desde el MSX (tocarla no). El FM y el MSX-Audio no usan <code>/WAIT</code>; en simulación se leen bien hasta 7,16&nbsp;MHz.</li><li>No hay control de volumen en el cartucho. Las ondas van 6&nbsp;dB por debajo del FM, como en el MSXimus; con el MSX-Audio, un limitador suaviza los picos de la suma en vez de recortarlos.</li></ul>
+<!-- /wp:list -->
+<!-- wp:list {"className":"repa-en"} -->
+<ul class="wp-block-list repa-en"><li><strong>MoonSound</strong>: what works on a MoonSound should work here: <strong>VGMPlay</strong>, <strong>MoonBlaster Wave</strong>, games and demos. A good test: VGMPlay twice in a row, leaving to DOS without a reset, MoonBlaster Wave, and a reset of the MSX followed by <code>MT4YRW</code>.</li><li><strong>MSX-Audio</strong> (versions 1 and 2): software that talks to the chip directly should work: <strong>VGMPlay</strong> with MSX-Audio music, <strong>MoonBlaster 1.4</strong> (FM and ADPCM samples) and games that write to its ports.</li><li><strong>No MSX-Audio BIOS</strong>: the cartridge only answers the ports. Software that needs that ROM, such as <strong>FAC SoundTracker</strong>, does not find it.</li><li>Only the <strong>first</strong> MSX-Audio unit (<code>C0h–C1h</code>); <code>C2h–C3h</code> stay free. Recording (the ADC), the DAC registers and the chip's keyboard and I/O ports are not there.</li><li>Do you have a <strong>real MSX-Audio</strong> plugged in? Use <strong>version 3</strong>.</li><li><strong>Turbo</strong>: 3.58&nbsp;MHz is recommended. From 5.37&nbsp;MHz on, <em>reading</em> the wave memory from the MSX may fail (playing it does not). The FM and the MSX-Audio do not use <code>/WAIT</code>; in simulation they read fine up to 7.16&nbsp;MHz.</li><li>There is no volume control on the cartridge. The wavetable sits 6&nbsp;dB below the FM, as in the MSXimus; with the MSX-Audio, a limiter softens the peaks of the sum instead of clipping them.</li></ul>
+<!-- /wp:list -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading"><span class="repa-es">📦 Descargas</span><span class="repa-en">📦 Downloads</span></h2>
+<!-- /wp:heading -->
+
+<!-- wp:list {"className":"repa-es"} -->
+<ul class="wp-block-list repa-es"><li>Versión 1 · OPL4 + MSX-Audio: [DESCARGA VERSIÓN 1 .fs]</li><li>Versión 2 · OPL4 + MSX-Audio + HDMI: [DESCARGA VERSIÓN 2 .fs]</li><li>Versión 3 · OPL4 + HDMI: [DESCARGA VERSIÓN 3 .fs]</li><li>Programas de prueba <code>MT1DET</code>…<code>MT7AUD</code>: [DESCARGA PROGRAMAS DE PRUEBA]</li><li>Código fuente y documentación: [ENLACE REPOSITORIO]</li></ul>
+<!-- /wp:list -->
+<!-- wp:list {"className":"repa-en"} -->
+<ul class="wp-block-list repa-en"><li>Version 1 · OPL4 + MSX-Audio: [DESCARGA VERSIÓN 1 .fs]</li><li>Version 2 · OPL4 + MSX-Audio + HDMI: [DESCARGA VERSIÓN 2 .fs]</li><li>Version 3 · OPL4 + HDMI: [DESCARGA VERSIÓN 3 .fs]</li><li>Test programs <code>MT1DET</code>…<code>MT7AUD</code>: [DESCARGA PROGRAMAS DE PRUEBA]</li><li>Source code and documentation: [ENLACE REPOSITORIO]</li></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph {"className":"repa-es"} -->
+<p class="repa-es">La YRW801 no está en las descargas: cada uno usa su propia copia.</p>
+<!-- /wp:paragraph -->
+<!-- wp:paragraph {"className":"repa-en"} -->
+<p class="repa-en">The YRW801 is not in the downloads: everyone uses their own copy.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading -->
+<h2 class="wp-block-heading"><span class="repa-es">🙏 Créditos</span><span class="repa-en">🙏 Credits</span></h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph {"className":"repa-es"} -->
+<p class="repa-es">MoonTANG se apoya en el gran trabajo abierto de mucha gente. Gracias a todos:</p>
+<!-- /wp:paragraph -->
+<!-- wp:paragraph {"className":"repa-en"} -->
+<p class="repa-en">MoonTANG stands on the great open work of many people. Thanks to all of them:</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"className":"repa-es"} -->
+<ul class="wp-block-list repa-es"><li><strong>Greg Taylor</strong> (gtaylormb): el núcleo <a href="https://github.com/gtaylormb/opl3_fpga" target="_blank" rel="noopener">OPL3 FPGA</a>, la mitad FM, basado en la ingeniería inversa de <strong>Robson Cozendey</strong>, <strong>Steffen Ohrendorf</strong> y <strong>Nuke.YKT</strong>.</li><li><strong>Jokin Miragaia</strong> (antxiko): mangOPL4, con los ajustes para Gowin y el envoltorio de cartucho MoonSound que hemos adaptado.</li><li><strong>srg320</strong>: el motor PCM/wavetable del YMF278B, derivado del <code>ymf278b.cpp</code> de <strong>MAME</strong> (<strong>R. Belmont</strong>, <strong>Olivier Galibert</strong> y <strong>hap</strong>).</li><li><strong>José Tejada</strong> (jotego): <a href="https://github.com/jotego/jtopl" target="_blank" rel="noopener">JTOPL</a> (el FM del Y8950) y el decodificador ADPCM-B de <a href="https://github.com/jotego/jt12" target="_blank" rel="noopener">JT12</a>.</li><li><strong>Shinobu Hashimoto</strong> (buppu3): <a href="https://github.com/buppu3/tnCart" target="_blank" rel="noopener">tnCart</a>, cuyo acceso al bus multiplexado usamos.</li><li><strong>Albert Herranz</strong> (herraa1): <a href="https://github.com/herraa1/tnCartWonder" target="_blank" rel="noopener">tnCartWonder</a>, la adaptación a la WonderTANG y el transmisor I2S.</li><li><strong>luca</strong> (lfantoniosi): el cartucho <a href="https://github.com/lfantoniosi/WonderTANG" target="_blank" rel="noopener">WonderTANG</a> y su asignación de pines.</li><li><strong>Sameer Puri</strong>: <a href="https://github.com/hdl-util/hdmi" target="_blank" rel="noopener">hdl-util/hdmi</a>, el transmisor HDMI con sonido.</li><li><strong>Takayuki Hara</strong> (HRA!): el controlador de SDRAM de su proyecto de cartucho V9968.</li><li><strong>Dan Gisselquist</strong>: la FIFO asíncrona del interfaz FM.</li><li><strong>openMSX</strong>: su Y8950 sirvió de referencia para los registros ADPCM, y con su MoonSound y su MSX-Audio se comprobaron los valores de los programas de prueba.</li><li><strong>Sipeed</strong>, por la Tang Nano 20K, y <strong>Gowin</strong>, por sus primitivas de reloj y serialización.</li></ul>
+<!-- /wp:list -->
+<!-- wp:list {"className":"repa-en"} -->
+<ul class="wp-block-list repa-en"><li><strong>Greg Taylor</strong> (gtaylormb): the <a href="https://github.com/gtaylormb/opl3_fpga" target="_blank" rel="noopener">OPL3 FPGA</a> core, the FM half, built on the reverse-engineering of <strong>Robson Cozendey</strong>, <strong>Steffen Ohrendorf</strong> and <strong>Nuke.YKT</strong>.</li><li><strong>Jokin Miragaia</strong> (antxiko): mangOPL4, with the Gowin fixes and the MoonSound cartridge wrapper we adapted.</li><li><strong>srg320</strong>: the YMF278B PCM/wavetable engine, derived from <strong>MAME</strong>'s <code>ymf278b.cpp</code> (<strong>R. Belmont</strong>, <strong>Olivier Galibert</strong> and <strong>hap</strong>).</li><li><strong>José Tejada</strong> (jotego): <a href="https://github.com/jotego/jtopl" target="_blank" rel="noopener">JTOPL</a> (the Y8950 FM) and the ADPCM-B decoder of <a href="https://github.com/jotego/jt12" target="_blank" rel="noopener">JT12</a>.</li><li><strong>Shinobu Hashimoto</strong> (buppu3): <a href="https://github.com/buppu3/tnCart" target="_blank" rel="noopener">tnCart</a>, whose multiplexed bus front-end we use.</li><li><strong>Albert Herranz</strong> (herraa1): <a href="https://github.com/herraa1/tnCartWonder" target="_blank" rel="noopener">tnCartWonder</a>, the WonderTANG port and the I2S transmitter.</li><li><strong>luca</strong> (lfantoniosi): the <a href="https://github.com/lfantoniosi/WonderTANG" target="_blank" rel="noopener">WonderTANG</a> cartridge and its pinout.</li><li><strong>Sameer Puri</strong>: <a href="https://github.com/hdl-util/hdmi" target="_blank" rel="noopener">hdl-util/hdmi</a>, the HDMI transmitter with audio.</li><li><strong>Takayuki Hara</strong> (HRA!): the SDRAM controller from his V9968 cartridge project.</li><li><strong>Dan Gisselquist</strong>: the async FIFO of the FM interface.</li><li><strong>openMSX</strong>: its Y8950 was the reference for the ADPCM registers, and its MoonSound and MSX-Audio were used to check the values of the test programs.</li><li><strong>Sipeed</strong>, for the Tang Nano 20K, and <strong>Gowin</strong>, for their clock and serialiser primitives.</li></ul>
+<!-- /wp:list -->
+
+<!-- wp:paragraph {"className":"repa-es"} -->
+<p class="repa-es">Cada pieza conserva su licencia original (LGPL-3.0, GPL-3.0, BSD-2/BSD-3, MIT/Apache-2.0) y sus avisos van en el repositorio.</p>
+<!-- /wp:paragraph -->
+<!-- wp:paragraph {"className":"repa-en"} -->
+<p class="repa-en">Each part keeps its original license (LGPL-3.0, GPL-3.0, BSD-2/BSD-3, MIT/Apache-2.0), and their notices are in the repository.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph {"className":"repa-es"} -->
+<p class="repa-es">MoonTANG lo ha hecho <strong>Albert (Papipapito)</strong> programando a cuatro manos con <strong>Claude</strong> (Anthropic). Es un proyecto hobby y sin ánimo de lucro, de código abierto [LICENCIA]. Algunas piezas llevan una cláusula no comercial: <strong>no se puede vender</strong>. La lista completa de autores y licencias está en el repositorio.</p>
+<!-- /wp:paragraph -->
+<!-- wp:paragraph {"className":"repa-en"} -->
+<p class="repa-en">MoonTANG was made by <strong>Albert (Papipapito)</strong> pair-programming with <strong>Claude</strong> (Anthropic). It is a hobby, non-commercial, open-source project [LICENCIA]. Some parts carry a non-commercial clause: <strong>it must not be sold</strong>. The full list of authors and licenses is in the repository.</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph {"className":"repa-es"} -->
+<p class="repa-es"><em>MoonTANG es un proyecto de aficionados, sin relación con Yamaha. «MoonSound» y MSX se citan solo por compatibilidad.</em></p>
+<!-- /wp:paragraph -->
+<!-- wp:paragraph {"className":"repa-en"} -->
+<p class="repa-en"><em>MoonTANG is a fan project, not affiliated with Yamaha. "MoonSound" and MSX are referenced for interoperability only.</em></p>
+<!-- /wp:paragraph -->

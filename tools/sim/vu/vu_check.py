@@ -6,7 +6,7 @@
 #   python3 vu_check.py <dir_build> <dir_out> <font8x8.v> <BUILD> [lista]
 #
 # Lee <dir_build>/<lista> (por defecto frames.txt; una linea por cuadro
-# volcado: fichero, 6 niveles, 6 picos, st_rom, st_msx), pinta con este modelo
+# volcado: fichero, 6 niveles, 6 picos, st_rom, st_msx, sample_level), pinta con este modelo
 # lo que DEBERIA verse y lo
 # compara pixel a pixel con el PPM de la simulacion. Tambien comprueba que nada
 # que no sea fondo se sale del margen de seguridad (x 36..684, y 24..456).
@@ -90,7 +90,7 @@ def zone(s):
     return 0 if s <= 20 else 1 if s <= 25 else 2
 
 
-def model(font, lv, pk, st_rom, st_msx, build):
+def model(font, lv, pk, st_rom, st_msx, sample_level, build):
     im = Img()
     # titulo: la tinta empieza en x = 48 (la columna 0 de la fuente va vacia)
     im.text(font, 48 - 4, 40, "MOONTANG", 4, TITLE)
@@ -121,6 +121,11 @@ def model(font, lv, pk, st_rom, st_msx, build):
     im.text(font, 48 - 2 + 7 * 16, 392, txt, 2, col)
     im.text(font, 400, 392, "MSX", 2, LABEL)
     im.text(font, 400 + 4 * 16, 392, "OK" if st_msx else "--", 2, GREEN if st_msx else GREY)
+    # Marca de agua de los 2 MiB de sample RAM.
+    im.text(font, 48 - 1, 416, "SAMPLE RAM", 1, LABEL)
+    for s in range(1, NSEG + 1):
+        im.rect(BAR_X + (s - 1) * PITCH, 416, SEG_W, 8,
+                ON[zone(s)] if s <= sample_level else OFF[zone(s)])
     # pie
     im.text(font, 48 - 1, 440, "MOONTANG " + build, 1, GREY)
     return im.p
@@ -180,9 +185,9 @@ def main():
             continue
         name = f[0]
         v = [int(t) for t in f[1:]]
-        lv, pk, st_rom, st_msx = v[0:6], v[6:12], v[12], v[13]
+        lv, pk, st_rom, st_msx, sample_level = v[0:6], v[6:12], v[12], v[13], v[14]
         sim = read_ppm(os.path.join(build_dir, name))
-        ref = model(font, lv, pk, st_rom, st_msx, build)
+        ref = model(font, lv, pk, st_rom, st_msx, sample_level, build)
         # --- comparacion con el modelo ---
         dif = [i for i in range(W * H) if sim[i] != ref[i]]
         # --- margen de seguridad ---
@@ -194,7 +199,8 @@ def main():
         png = os.path.join(out_dir, base + ".png")
         write_png(png, [tv(c) for c in sim])
         write_16x9(os.path.join(out_dir, base + "_16x9.png"), png)
-        print("%s  level=%s peak=%s st_rom=%d st_msx=%d" % (name, lv, pk, st_rom, st_msx))
+        print("%s  level=%s peak=%s st_rom=%d st_msx=%d sample=%d" %
+              (name, lv, pk, st_rom, st_msx, sample_level))
         print("    distintos del modelo: %d    fuera de margen: %d    caja pintada: x %d..%d, y %d..%d"
               % (len(dif), len(fuera), caja[0], caja[2], caja[1], caja[3]))
         if dif:
