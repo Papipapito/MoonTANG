@@ -1,6 +1,6 @@
 # MoonTANG 🌙
 
-![MoonTANG 1.0 beta — overview](docs/img/moontang-1.0beta-overview.png)
+![MoonTANG 1.0.1 beta — overview](docs/img/moontang-1.0beta-overview.png)
 
 > **Español.** MoonTANG es un cartucho MoonSound / MSX-Audio experimental para
 > MSX basado en una Tang Nano 20K. Añade OPL4, muestras PCM, HDMI opcional y,
@@ -28,15 +28,15 @@
 > other equipment. Test in SRAM first, connect it with the MSX powered off, and
 > verify power and J3 before use.
 
-## 1.0 beta: three WonderTANG versions / tres versiones WonderTANG
+## 1.0.1 beta: three WonderTANG versions / tres versiones WonderTANG
 
 All three builds are for the **WonderTANG 2.02b only**.
 
 | Bitstream | English | Español |
 |---|---|---|
-| [`moontang_wondertang202b_hdmi_1.0beta.fs`](bitstream/moontang_wondertang202b_hdmi_1.0beta.fs) | **OPL4 + HDMI.** MoonSound, stereo HDMI audio/video and mono sound into the MSX through `SOUNDIN`. Use this when you already own a real MSX-Audio. | **OPL4 + HDMI.** MoonSound, vídeo y audio HDMI estéreo y sonido mono hacia el MSX por `SOUNDIN`. Úsala si ya tienes un MSX-Audio real. |
-| [`moontang_wondertang202b_hdmi_msxaudio_1.0beta.fs`](bitstream/moontang_wondertang202b_hdmi_msxaudio_1.0beta.fs) | **OPL4 + MSX-Audio + HDMI.** Everything together: MoonSound, Y8950 MSX-Audio and HDMI. It is the largest build (91 % CLS); test it in SRAM first. | **OPL4 + MSX-Audio + HDMI.** Todo junto: MoonSound, MSX-Audio Y8950 y HDMI. Es la versión más grande (91 % CLS); pruébala primero en SRAM. |
-| [`moontang_wondertang202b_msxaudio_1.0beta.fs`](bitstream/moontang_wondertang202b_msxaudio_1.0beta.fs) | **OPL4 + MSX-Audio, no HDMI.** MoonSound plus Y8950 MSX-Audio, with sound through the MSX. | **OPL4 + MSX-Audio, sin HDMI.** MoonSound más MSX-Audio Y8950, con sonido por el propio MSX. |
+| [`moontang_wondertang202b_hdmi_1.0.1beta.fs`](bitstream/moontang_wondertang202b_hdmi_1.0.1beta.fs) | **OPL4 + HDMI.** MoonSound, stereo HDMI audio/video and mono sound into the MSX through `SOUNDIN`. Use this when you already own a real MSX-Audio. | **OPL4 + HDMI.** MoonSound, vídeo y audio HDMI estéreo y sonido mono hacia el MSX por `SOUNDIN`. Úsala si ya tienes un MSX-Audio real. |
+| [`moontang_wondertang202b_hdmi_msxaudio_1.0.1beta.fs`](bitstream/moontang_wondertang202b_hdmi_msxaudio_1.0.1beta.fs) | **OPL4 + MSX-Audio + HDMI.** Everything together: MoonSound, Y8950 MSX-Audio and HDMI. It is the largest build (91 % CLS); test it in SRAM first. | **OPL4 + MSX-Audio + HDMI.** Todo junto: MoonSound, MSX-Audio Y8950 y HDMI. Es la versión más grande (91 % CLS); pruébala primero en SRAM. |
+| [`moontang_wondertang202b_msxaudio_1.0.1beta.fs`](bitstream/moontang_wondertang202b_msxaudio_1.0.1beta.fs) | **OPL4 + MSX-Audio, no HDMI.** MoonSound plus Y8950 MSX-Audio, with sound through the MSX. | **OPL4 + MSX-Audio, sin HDMI.** MoonSound más MSX-Audio Y8950, con sonido por el propio MSX. |
 
 ### Before flashing / antes de grabar
 

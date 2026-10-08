@@ -16,7 +16,7 @@
 `default_nettype none
 
 module moontang_wt_hdmi_audio_top #(
-    parameter [8*10-1:0] BUILD = "1.0beta   ",
+    parameter [8*10-1:0] BUILD = "1.0.1beta ",
     parameter AUDIO_MONO = 1,               // ver moontang_wt_shell
     parameter SDRAM_RD_CAPTURE_CLK = 1,     // ver moontang_core
     parameter VU_Y8950 = 1                  // 1 = barra MSX-AUDIO (mono) en el vumetro

@@ -163,9 +163,12 @@ tnCart use.
 
 ## Audio
 
-The mixer is the MSXimus one: each FM channel side at its native level with the
-attenuation of register `F8h`, plus the wave output 6 dB down, saturated to 16
-bits. The core outputs left, right and their half‑sum.
+The mixer uses each FM channel side at its native level with the attenuation of
+register `F8h`. The wave output keeps the `F9h` attenuation of the YMF278B and
+then has a fixed `23/64` trim (−8.87 dB, or −2.87 dB relative to the original
+MoonTANG balance). This compensates the PCM voices being too prominent against
+the OPL3 after reset (`F8h = 1Bh`). The core saturates the result to 16 bits and
+outputs left, right and their half-sum.
 
 - **WonderTANG.** The Tang's amplifier is mono, so both I2S frames carry the
   half‑sum. The HDMI bitstream adds the HDMI output below, in parallel. `i2s_feed` latches each sample right after the frame clock edge, so the

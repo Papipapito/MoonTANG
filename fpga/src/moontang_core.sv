@@ -71,7 +71,7 @@ module moontang_core #(
     // ---- audio, en clk_54m ----
     output wire signed [15:0] fm_l,     // FM ya atenuado por el registro F8
     output wire signed [15:0] fm_r,
-    output wire signed [15:0] wave_l,   // wave ya con su >>1 de mezcla
+    output wire signed [15:0] wave_l,   // wave ya con su trim de mezcla (-8.87 dB nominal)
     output wire signed [15:0] wave_r,
     output reg  signed [15:0] mix_l = 16'sd0,   // FM + wave, saturado
     output reg  signed [15:0] mix_r = 16'sd0,
@@ -347,8 +347,11 @@ module moontang_core #(
     //     (MixCalc -3 dB/paso; 0,75x = (x>>1)+(x>>2)). El shift vive en un wire
     //     SIGNED propio: un literal sin signo en el ternario degrada el >>> a
     //     shift logico y rectifica los negativos (leccion _85/_115).
-    //   - wave: L y R del motor con >>1 (|fm| < 2^15, |pcm>>1| < 2^14: la suma
-    //     cabe en 17 bits). Es el balance FM/wave validado de oido en el MSXimus.
+    //   - wave: L y R del motor a 23/64 = 0.359375 (-8.87 dB). La version
+    //     inicial usaba 1/2 (-6.02 dB); reducirlo 2.87 dB corrige que los
+    //     instrumentos PCM quedaban por delante del FM al arrancar (F8=1Bh).
+    //     Se expresa como shifts/sumas para no introducir un multiplicador en
+    //     la GW2AR-18, que ya esta muy cerca de su limite de CLS.
     // ==================================================================
     wire signed [15:0] o4fm_sl = $signed(opl4fm_wav_l);
     wire signed [15:0] o4fm_sr = $signed(opl4fm_wav_r);
@@ -359,8 +362,11 @@ module moontang_core #(
     assign fm_l = (opl4_mixfm[2:0] == 3'd7) ? 16'sd0 : o4fm_al;
     assign fm_r = (opl4_mixfm[2:0] == 3'd7) ? 16'sd0 : o4fm_ar;
 
-    assign wave_l = opl4pcm_l >>> 1;
-    assign wave_r = opl4pcm_r >>> 1;
+    wire signed [15:0] o4pcm_sl = $signed(opl4pcm_l);
+    wire signed [15:0] o4pcm_sr = $signed(opl4pcm_r);
+    // 1/4 + 1/8 - 1/64 = 23/64. Frente al 1/2 anterior: -2.87 dB.
+    assign wave_l = (o4pcm_sl >>> 2) + (o4pcm_sl >>> 3) - (o4pcm_sl >>> 6);
+    assign wave_r = (o4pcm_sr >>> 2) + (o4pcm_sr >>> 3) - (o4pcm_sr >>> 6);
 
     function automatic signed [15:0] sat16(input signed [17:0] v);
         sat16 = (v >  18'sd32767) ? 16'sh7FFF :

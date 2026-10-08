@@ -23,9 +23,9 @@ hardware yet. This is the bring‑up guide.
 
 | Bitstream | What it does |
 |---|---|
-| `bitstream/moontang_wondertang202b_msxaudio_1.0beta.fs` | MoonSound **and MSX‑Audio**, without HDMI. Sound to the MSX only. |
-| `bitstream/moontang_wondertang202b_hdmi_1.0beta.fs` | MoonSound with HDMI: sound to the MSX **and**, at the same time, stereo sound and a VU meter on the Tang's HDMI connector. |
-| `bitstream/moontang_wondertang202b_hdmi_msxaudio_1.0beta.fs` | MoonSound, MSX‑Audio **and** HDMI together. This is the high-occupancy beta build. |
+| `bitstream/moontang_wondertang202b_msxaudio_1.0.1beta.fs` | MoonSound **and MSX‑Audio**, without HDMI. Sound to the MSX only. |
+| `bitstream/moontang_wondertang202b_hdmi_1.0.1beta.fs` | MoonSound with HDMI: sound to the MSX **and**, at the same time, stereo sound and a VU meter on the Tang's HDMI connector. |
+| `bitstream/moontang_wondertang202b_hdmi_msxaudio_1.0.1beta.fs` | MoonSound, MSX‑Audio **and** HDMI together. This is the high-occupancy beta build. |
 
 Which one:
 
@@ -143,11 +143,15 @@ SDRAM.
 - **Detection right after power‑up.** For the ~2 s the wave ROM is being copied the
   PCM engine is held in reset: a program that looks for the MoonSound in that
   window will not see the wavetable. Wait for the LED to stay on.
-- **Level.** The mix is the MSXimus one: FM at its native level, wavetable 6 dB
-  down. With the MSX‑Audio bitstream the Y8950 is added with the MSXimus balance,
+- **Level.** FM keeps the OPL4 `F8h` setting. The wavetable keeps `F9h` and has
+  an additional fixed 8.87 dB trim (2.87 dB lower than the original MoonTANG
+  6 dB setting) so PCM instruments do not dominate at the reset level.
+  With the MSX‑Audio bitstream the Y8950 is added with the MSXimus balance,
   and a limiter compresses the peaks of the sum above 3/4 of full scale (2:1)
-  instead of clipping them; below that nothing changes. There is no volume control
-  on the cartridge.
+  instead of clipping them; below that nothing changes. `tools/msx/MTVOL.COM`
+  controls the native OPL4 FM/Wave mixer only: `0` is the lowest numeric level,
+  `18` is maximum and `M` mutes. It deliberately does not alter the Y8950
+  MSX-Audio mix.
 
 ## Telemetry
 

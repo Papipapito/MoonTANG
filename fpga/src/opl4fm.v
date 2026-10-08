@@ -185,6 +185,7 @@ assign dout = (addr_r[0] == 1'b0) ? (opl3_dout | {6'b000000, wave_status}) : // 
 // core OPL3 (fork mangOPL4; FIFO async interna clk_host->clk_opl3)
 // ---------------------------------------------------------------------------
 wire signed [23:0] sample_l, sample_r;   // opl3_pkg::DAC_OUTPUT_WIDTH = 24
+wire opl3_irq_n;
 
 opl3 u_opl3 (
     .clk               (clk_opl3),
@@ -207,7 +208,6 @@ opl3 u_opl3 (
 
 // _108: IRQ al bus — 2FF al dominio host (27M y 54M son hermanos del PLLA,
 // cruce cronometrado; la disciplina 3FF es para payloads, esto es 1 bit).
-wire opl3_irq_n;
 reg  irq_s0 = 1'b1, irq_s1 = 1'b1;
 always @(posedge clk_host) begin
     irq_s0 <= opl3_irq_n;
