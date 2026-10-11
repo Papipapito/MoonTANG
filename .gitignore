@@ -30,3 +30,6 @@ ruvector.db
 # simulation build products (generated Verilog, compiled benches, logs, frames)
 tools/sim/build/
 tools/sim/**/build/
+
+# Python bytecode
+__pycache__/
