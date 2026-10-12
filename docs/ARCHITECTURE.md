@@ -56,7 +56,12 @@ The design is one **core** — the MoonSound itself — inside the WonderTANG sh
 The OPL4 files are the ones of the MSXimus (Zynq branch) and are kept in sync with
 it. MoonTANG's own differences are confined to parameters of `opl4_pcm.v`: the
 clock‑enable fraction of the PCM engine, the telemetry baud divisor, and the
-optional read mirror (`RD_MIRROR`, off by default).
+optional read mirror (`RD_MIRROR`, off by default) — plus, since 12/10/2026, four
+fixes of the PCM engine that MSXimus Z does not have yet (pan of 3 dB per step,
+the TL ramp towards the level written, the decay level of 3 dB per step, a 21‑bit
+slot sum) and the status on `C6h` in `opl3/host_if.sv`; they are listed, with the
+patch for MSXimus, in [`estudios/ZEMMIX_hallazgos.md`](../estudios/ZEMMIX_hallazgos.md)
+and checked by `tools/sim/opl4eng/`.
 
 The Y8950 files under `y8950/` are those of the MSXimus 60K (V3.8 branch), which
 are the same in every MSXimus core. JTOPL comes with the MSXimus change to it (the

@@ -725,7 +725,11 @@ module YMF278B (
 								NEW_EVOL = DECAY_VOL_CALC[9:0];
 							else
 								NEW_EVOL = 10'h3ff;
-							if (OP4_EVOL[9:6] == OP4_DL)
+							// MoonTANG (12/10/2026): the decay level is 3 dB per step
+							// (DL x 20h in level units; DL = 15 is 3E0h), as in openMSX's
+							// dl_tab and srg320's YMF278B of 31/07/2026. It compared
+							// EVOL[9:6], 6 dB per step: decay 1 went twice as deep.
+							if (OP4_EVOL[9:5] == {&OP4_DL, OP4_DL})
 								NEW_EST = YMF278B_PKG_EST_DECAY2;
 						end
 						YMF278B_PKG_EST_DECAY2:
@@ -791,14 +795,20 @@ module YMF278B (
 				{OP5_TL, OP5_LDIR} <= REG_LEVEL_Q;
 			{TL_INT, TL_FRAC} = TL_RAM_Q;
 			if (SLOT1_CE) begin
+				// MoonTANG (12/10/2026): without level direct the level moves
+				// TOWARDS the TL written, one step every 27 samples when it gets
+				// softer and every 13.5 when it gets louder (openMSX
+				// YMF278::advance; 1024 / 27 = 38, 1024 / 13.5 = 76 per sample).
+				// It moved away from it and wrapped round (full level and -48 dB
+				// in turn). Found by ZEMMIX (rampa069, 10/10/2026).
 				if (OP5_LDIR)
 					TL_RAM_D <= {OP5_TL, 10'h000};
-				else if (TL_INT > OP5_TL)
-					TL_RAM_D <= {TL_INT, TL_FRAC} + 17'd19;
 				else if (TL_INT < OP5_TL)
-					TL_RAM_D <= {TL_INT, TL_FRAC} - 17'd38;
+					TL_RAM_D <= {TL_INT, TL_FRAC} + 17'd38;
+				else if (TL_INT > OP5_TL)
+					TL_RAM_D <= {TL_INT, TL_FRAC} - 17'd76;
 				else
-					TL_RAM_D <= {TL_INT, TL_FRAC};
+					TL_RAM_D <= {TL_INT, 10'h000};
 				OP6[33-:5] <= OP5[41-:5];
 				OP6[28] <= OP5[36];
 				OP6[27] <= OP5[35];
@@ -817,6 +827,7 @@ module YMF278B (
 		.Q(TL_RAM_Q)
 	);
 	localparam [23:0] YMF278B_PKG_OP7_RESET = 24'h000000;
+	reg [9:0] OP7_LEVEL = 10'h3ff;       // MoonTANG: level of the OP7 slot (TL, ALFO, EG)
 	function signed [15:0] YMF278B_PKG_VolCalc;
 		input reg signed [15:0] WAVE;
 		input reg [9:0] LEVEL;
@@ -829,73 +840,99 @@ module YMF278B (
 		end
 	endfunction
 	always @(posedge CLK or negedge RST_N)
-		if (!RST_N)
+		if (!RST_N) begin
 			OP7 <= YMF278B_PKG_OP7_RESET;
-		else if (!RES_N)
+			OP7_LEVEL <= 10'h3ff;
+		end
+		else if (!RES_N) begin
 			OP7 <= YMF278B_PKG_OP7_RESET;
+			OP7_LEVEL <= 10'h3ff;
+		end
 		else if (SLOT1_CE) begin
 			OP7[23-:5] <= OP6[33-:5];
 			OP7[18] <= OP6[28];
 			OP7[17] <= OP6[27];
 			OP7[16] <= OP6[26];
-			OP7[15-:16] <= YMF278B_PKG_VolCalc(OP6[25-:16], OP6[9-:10]);
+			// MoonTANG (12/10/2026): the wave data and its level go on as they
+			// are; the volume is applied below, once per side, with the pan
+			// added to the level (srg320's YMF278B of 31/07/2026)
+			OP7[15-:16] <= OP6[25-:16];
+			OP7_LEVEL <= OP6[9-:10];
 		end
-	reg [3:0] OP7_PAN = 0;
-	reg OP7_CH = 0;
-	reg [17:0] ACC_L = 0;
-	reg [17:0] ACC_R = 0;
-	function signed [15:0] YMF278B_PKG_PanLCalc;
-		input reg signed [15:0] WAVE;
+	// MoonTANG (12/10/2026): the pan is an attenuation of 3 dB per step (20h
+	// in level units) of one side — PAN 1-6 the left, 7 and 8 mute the left,
+	// 8 and 9 mute the right, 10-15 the right, 16 - PAN steps — as openMSX's
+	// pan_left / pan_right. It used to shift the sample by 2 x PAN bits: 12 dB
+	// per step, so a slot panned one step was 12 dB down on one side.
+	// (srg320's version of 31/07/2026 counts 7 - PAN[2:0] steps on the right,
+	// one short of the tables.)
+	function [9:0] YMF278B_PKG_LevelAddPanL;
+		input reg [9:0] LEVEL;
 		input reg [3:0] PAN;
-		reg [3:0] S;
-		reg [15:0] TEMP;
+		reg [9:0] PAN_LEVEL;
+		reg [10:0] SUM;
 		begin
-			S = 4'd0 + PAN;
-			TEMP = $signed($signed(WAVE) >>> {S[2:0], 1'b0});
-			YMF278B_PKG_PanLCalc = (PAN == 4'h0 ? WAVE : (PAN == 4'h8 ? 16'h0000 : (PAN[3] ? WAVE : $signed(TEMP))));
+			PAN_LEVEL = ((PAN == 4'h7) || (PAN == 4'h8)) ? 10'h3ff :
+			            ((PAN > 4'h8) || (PAN == 4'h0)) ? 10'h000 : {2'b00, PAN[2:0], 5'b00000};
+			SUM = {1'b0, LEVEL} + {1'b0, PAN_LEVEL};
+			YMF278B_PKG_LevelAddPanL = SUM[10] ? 10'h3ff : SUM[9:0];
 		end
 	endfunction
-	function signed [15:0] YMF278B_PKG_PanRCalc;
-		input reg signed [15:0] WAVE;
+	function [9:0] YMF278B_PKG_LevelAddPanR;
+		input reg [9:0] LEVEL;
 		input reg [3:0] PAN;
-		reg [3:0] S;
-		reg [15:0] TEMP;
+		reg [3:0] STEPS;
+		reg [9:0] PAN_LEVEL;
+		reg [10:0] SUM;
 		begin
-			S = 4'd0 - PAN;
-			TEMP = $signed($signed(WAVE) >>> {S[2:0], 1'b0});
-			YMF278B_PKG_PanRCalc = (PAN == 4'h0 ? WAVE : (PAN == 4'h8 ? 16'h0000 : (!PAN[3] ? WAVE : $signed(TEMP))));
+			STEPS = 4'd8 - {1'b0, PAN[2:0]};                   // 16 - PAN
+			PAN_LEVEL = ((PAN == 4'h8) || (PAN == 4'h9)) ? 10'h3ff :
+			            (PAN < 4'h8) ? 10'h000 : {2'b00, STEPS[2:0], 5'b00000};
+			SUM = {1'b0, LEVEL} + {1'b0, PAN_LEVEL};
+			YMF278B_PKG_LevelAddPanR = SUM[10] ? 10'h3ff : SUM[9:0];
 		end
 	endfunction
+	// MoonTANG (12/10/2026): 21 bits for the sum of the 24 slots (16 bits each).
+	// With 18 it wrapped round with many loud slots: a click with the sign
+	// changed. TrimWave saturates it to 16 bits as the chip. Found by ZEMMIX.
+	reg [9:0] OP7_LVLL = 10'h3ff;
+	reg [9:0] OP7_LVLR = 10'h3ff;
+	reg [20:0] ACC_L = 0;
+	reg [20:0] ACC_R = 0;
 	reg [4:0] S = 0;
-	reg signed [15:0] TEMP = 0;
-	reg signed [15:0] PAN_L = 0;
-	reg signed [15:0] PAN_R = 0;
+	reg signed [15:0] TEMP_L = 0;
+	reg signed [15:0] TEMP_R = 0;
 	always @(posedge CLK or negedge RST_N) begin : sv2v_autoblock_8
 		if (!RST_N) begin
-			OP7_PAN <= 1'sb0;
+			OP7_LVLL <= 10'h3ff;
+			OP7_LVLR <= 10'h3ff;
 			ACC_L <= 0;
 			ACC_R <= 0;
 		end
 		else if (!RES_N) begin
-			OP7_PAN <= 1'sb0;
+			OP7_LVLL <= 10'h3ff;
+			OP7_LVLR <= 10'h3ff;
 			ACC_L <= 0;
 			ACC_R <= 0;
 		end
 		else begin
-			if (CYCLE0_CE)
-				{OP7_CH, OP7_PAN} <= REG_PAN_Q[4:0];
+			// the pan of this slot arrives on REG_PAN_Q during its OP7 window,
+			// as before; CH (bit 4) takes the slot out of this mix
+			if (CYCLE0_CE) begin
+				OP7_LVLL <= REG_PAN_Q[4] ? 10'h3ff : YMF278B_PKG_LevelAddPanL(OP7_LEVEL, REG_PAN_Q[3:0]);
+				OP7_LVLR <= REG_PAN_Q[4] ? 10'h3ff : YMF278B_PKG_LevelAddPanR(OP7_LEVEL, REG_PAN_Q[3:0]);
+			end
 			S = OP7[23-:5];
-			TEMP = (!OP7_CH ? OP7[15-:16] : {16 {1'sb0}});
-			PAN_L = YMF278B_PKG_PanLCalc(TEMP, OP7_PAN);
-			PAN_R = YMF278B_PKG_PanRCalc(TEMP, OP7_PAN);
+			TEMP_L = YMF278B_PKG_VolCalc(OP7[15-:16], OP7_LVLL);
+			TEMP_R = YMF278B_PKG_VolCalc(OP7[15-:16], OP7_LVLR);
 			if (SLOT1_CE) begin
 				if (S == 5'd0) begin
-					ACC_L <= {{2 {PAN_L[15]}}, PAN_L[15:0]};
-					ACC_R <= {{2 {PAN_R[15]}}, PAN_R[15:0]};
+					ACC_L <= {{5 {TEMP_L[15]}}, TEMP_L[15:0]};
+					ACC_R <= {{5 {TEMP_R[15]}}, TEMP_R[15:0]};
 				end
 				else begin
-					ACC_L <= ACC_L + {{2 {PAN_L[15]}}, PAN_L[15:0]};
-					ACC_R <= ACC_R + {{2 {PAN_R[15]}}, PAN_R[15:0]};
+					ACC_L <= ACC_L + {{5 {TEMP_L[15]}}, TEMP_L[15:0]};
+					ACC_R <= ACC_R + {{5 {TEMP_R[15]}}, TEMP_R[15:0]};
 				end
 			end
 		end
@@ -903,8 +940,8 @@ module YMF278B (
 	reg [15:0] PCM_L = 0;
 	reg [15:0] PCM_R = 0;
 	function signed [15:0] YMF278B_PKG_TrimWave;
-		input reg signed [17:0] WAVE;
-		YMF278B_PKG_TrimWave = (WAVE[17] && (WAVE[16:15] != 2'b11) ? 16'h8000 : (!WAVE[17] && (WAVE[16:15] != 2'b00) ? 16'h7fff : WAVE[15:0]));
+		input reg signed [20:0] WAVE;
+		YMF278B_PKG_TrimWave = (WAVE[20] && (WAVE[19:15] != 5'b11111) ? 16'h8000 : (!WAVE[20] && (WAVE[19:15] != 5'b00000) ? 16'h7fff : WAVE[15:0]));
 	endfunction
 	always @(posedge CLK or negedge RST_N)
 		if (!RST_N) begin

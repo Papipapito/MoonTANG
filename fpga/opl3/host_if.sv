@@ -128,8 +128,13 @@ module host_if
 
     // Doom DMXOPTION=-opl3-phase detection routine specifically reads address 'b10 to see if it's all ones
     // Decompiled routine provided by Never_Again at https://www.vogons.org/viewtopic.php?f=7&t=100285
+    // MoonTANG (12/10/2026): the status also on address 2 (port C6h). The
+    // YMF278B gives its status on every read with A0 = 0 (openMSX
+    // MSXMoonSound::readIO, cases 0 and 2; ZEMMIX does the same): software
+    // that polls BUSY or LD on C6h hung here, and a detection that compares
+    // C6h with FFh saw no MoonSound. The Doom check above only matters on a PC.
     always_comb
-        dout = address_p1 == 0 ? host_status_p1 : '1;
+        dout = address_p1[0] == 0 ? host_status_p1 : '1;
 
     generate
     if (INSTANTIATE_TIMERS)

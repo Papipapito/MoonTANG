@@ -229,6 +229,7 @@ is not constrained).
 |---|---|
 | `tools/sim/tb_loader_real.v` | the YRW801 loader against the real SPI flash reader, and its checksum (right and wrong expected sum) |
 | `tools/sim/opl3_timer/` | an OPL3 timer stopped in the exact cycle where its prescaler wraps, in five different ways: flags and `/INT` must clear, and the normal periods must not change. Negative control: the timer before the fix fails 5 of 9 (`run.sh negativo`) |
+| `tools/sim/opl4eng/` (`run.sh`) | the PCM engine alone (`ymf278b_gowin.v`, CE on every clock, a zero‑latency memory) against the YMF278B as openMSX models it, with a sine written into the sample RAM through registers 02h–06h and a header for tone 384 (WTH = 4), as a program does: the pan is 3 dB per step (PAN 2 gives L/R = 0.50, PAN 1 0.71); without level direct the level moves towards the TL written, up in ~850 samples and down in ~1700; the sustain sits DL × 3 dB below the peak; and 8 slots at full level saturate at ±32767 without wrapping round. Before the fixes of 12/10/2026 the engine failed every one of them (the pan was 12 dB per step, the ramp went the other way, decay 1 went twice as deep, the sum wrapped) |
 | `tools/sim/tb_i2s.v` | I2S channel order, bit alignment, and that samples are stable when the transmitter loads them |
 | `tools/sim/vu/tb_vu_meter.v` | level‑to‑segment conversion against a logarithmic reference, and the meter ballistics |
 | `tools/sim/vu/` | the VU screen: renders frames to PNG and counts lit segments |

@@ -33,7 +33,7 @@ marcado "verificado" lo está en el chip real según los comentarios de openMSX)
 
 | # | Acceso | openMSX | MoonTANG | Dónde | Riesgo |
 |---|---|---|---|---|---|
-| 1 | `IN C6h` | estado, igual que `C4h` | **FFh** siempre | `fpga/opl3/host_if.sv:132` (`address_p1 == 0`) | **alto** si el programa espera BUSY/LD o detecta por `C6h` |
+| 1 | `IN C6h` | estado, igual que `C4h` | **FFh** siempre hasta la 1.0.1beta; **corregido** en esta rama (12/10/2026) | `fpga/opl3/host_if.sv` | **alto** con un bitstream anterior si el programa espera BUSY/LD o detecta por `C6h` |
 | 2 | `IN 7Fh` (ID, registros wave, RAM de muestras) | inmediato | ida y vuelta al motor (~0,5 µs) sostenida por `/WAIT`, ~70 ns de margen a 3,58 MHz | `opl4_pcm.v:253,277`; `RD_MIRROR = 0` en la WonderTANG | **alto** en turbo R (R800) o MSX con turbo |
 | 3 | RAM de muestras | 640 kB por defecto (el MoonSound real: 128 kB–1 MB) | **2 MB planos** `200000h–3FFFFFh` | `wave_sdram.v`, `wv_to_sdram.v` | medio: detección de tamaño |
 | 4 | Primeros ~2 s tras configurar la FPGA | — | motor PCM en reset: escrituras wave perdidas (NEW2 incluido), `7Fh` caducado | `moontang_core.sv` (copia de la YRW801) | medio si el disco arranca solo |
@@ -66,9 +66,9 @@ Con openMSX y el kit de [`tools/openmsx/`](../tools/openmsx/):
 
 Solo tienen sentido si el trazado lo confirma; los tres cambian el bitstream (Gowin).
 
-- **#1, estado en `C6h`.** `fpga/opl3/host_if.sv:132`:
-  `dout = address_p1[0] == 0 ? host_status_p1 : '1;`. Afecta también al MSXimus (el
-  fichero se comparte). Actualizar la línea 100 de `mt1det.asc` (`C6=00`).
+- **#1, estado en `C6h`.** Hecho en esta rama (`fpga/opl3/host_if.sv`,
+  `mt1det.asc` espera ahora `C6=00`). Pendiente de pasar al MSXimus (el fichero se
+  comparte).
 - **#2, lecturas de `7Fh` en turbo.** Pasar `.WAVE_RD_MIRROR(1)` a `moontang_core` en
   `fpga/src/moontang_wt_shell.sv`: los registros 02h (ID) y 06h (RAM) se sirven desde el
   dominio del bus sin esperar al motor, como ya hace la placa SMD. El `/WAIT` se mantiene.
