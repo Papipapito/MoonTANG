@@ -1,0 +1,26 @@
+<?xml version="1.0" ?>
+<!DOCTYPE msxconfig SYSTEM 'msxconfig2.dtd'>
+<msxconfig>
+  <info>
+    <name>MoonSound as MoonTANG (2 MB sample RAM)</name>
+    <manufacturer>MoonTANG test</manufacturer>
+    <code/>
+    <release_year>2026</release_year>
+    <description>openMSX's MoonSound with the sample RAM of MoonTANG: 2048 kB, flat at 200000h-3FFFFFh (openMSX's default is 640 kB). For comparing software against MoonTANG; the other differences are flagged by check_trace.py.</description>
+    <type>sound expansion</type>
+  </info>
+  <devices>
+    <MoonSound id="MoonTANG-like MoonSound">
+      <io base="0x7e" num="2"/>
+      <io base="0xc4" num="4"/>
+      <rom>
+        <sha1>32760893ce06dbe3930627755ba065cc3d8ec6ca</sha1>
+        <filename>yrw801.rom</filename>
+      </rom>
+      <sound>
+        <volume>17000</volume>
+      </sound>
+      <sampleram>2048</sampleram>
+    </MoonSound>
+  </devices>
+</msxconfig>
