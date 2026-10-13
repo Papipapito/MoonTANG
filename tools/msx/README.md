@@ -23,7 +23,11 @@ Run them at **3.58 MHz**, once the LED is on (or the HDMI screen says
 `MTVOL.COM` is deliberately limited to the **native** YMF278B mixer. It writes
 register `F8h` (FM) or `F9h` (Wave) through the established Wave ports
 `7Eh`/`7Fh`; there is no custom port, resident driver, or FPGA image change.
-It sets the same attenuation on left and right.
+It sets the same attenuation on left and right. Since 1.0.2 it first sets
+NEW2 (bit 1 of FM register 105h, keeping NEW), because a YMF278B ignores
+writes to `7Eh`/`7Fh` while NEW2 = 0, waits for BUSY before every access, and
+reads the command tail by its length byte (MSX-DOS 2 and Nextor end it with
+00h, not 0Dh). Checked in openMSX (FS-A1GT, Nextor, MoonSound).
 
 Compile it with [SjASMPlus](https://github.com/z00m128/sjasmplus):
 
@@ -49,7 +53,12 @@ that writes `F8h`/`F9h` afterwards (or a reset) can replace it.
 `MTVOL.COM` queda limitado deliberadamente al mezclador **nativo** del YMF278B.
 Escribe `F8h` (FM) o `F9h` (Wave) a través de los puertos Wave ya establecidos,
 `7Eh`/`7Fh`: no añade un puerto propio, un residente ni exige otro bitstream.
-Aplica la misma atenuación a los dos canales. Los valores posibles son
+Aplica la misma atenuación a los dos canales. Desde la 1.0.2 pone antes NEW2
+(bit 1 del registro 105h del FM, conservando NEW), porque el YMF278B ignora las
+escrituras a `7Eh`/`7Fh` con NEW2 = 0; espera a BUSY en cada acceso, y lee la
+línea de órdenes por su byte de longitud (MSX-DOS 2 y Nextor la cierran con
+00h, no con 0Dh). Comprobado en openMSX (FS-A1GT, Nextor, MoonSound). Los
+valores posibles son
 `0`, `3`, `6`, `9`, `12`, `15`, `18` o `M` para silenciar. Sin argumentos,
 `MTVOL` lee y muestra por separado los valores actuales izquierdo/derecho de
 FM y Wave. La escala es humana: `0` es el mínimo numérico (−18 dB, un octavo

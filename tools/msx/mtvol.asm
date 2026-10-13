@@ -9,25 +9,67 @@
 ; (0 dB), and M mutes. The OPL4 has one value every 3 dB.
 ; F8h and F9h are standard YMF278B mix-control registers, accessed through
 ; the existing MoonSound Wave ports 7Eh/7Fh. No MoonTANG-specific port is used.
+;
+; 1.0.2 (13/10/2026), two fixes found when running it in openMSX with Nextor:
+;   - NEW2 (bit 1 of FM register 105h) is set before touching 7Eh/7Fh. A real
+;     YMF278B (and openMSX) ignores writes to those ports while NEW2 = 0, so
+;     after a cold start the chip was "not detected". NEW (bit 0) is kept.
+;   - The command tail is read with its length byte at 0080h. MSX-DOS 2 and
+;     Nextor end it with 00h, not 0Dh, so every argument was "not valid".
+;   - Every access waits for BUSY (bit 0 of C4h) as the datasheet asks; a
+;     status of FFh (nothing on the bus) means there is no OPL4.
 
         org     0100h
 
 WAVE_ADDR       equ     07eh
 WAVE_DATA       equ     07fh
+FM_STATUS       equ     0c4h
+FM_ADDR1        equ     0c6h           ; FM register bank 1 (100h-1FFh)
+FM_DATA1        equ     0c7h
 YMF278_ID        equ     020h
 
 start:
+        ; Nothing answers on the FM status port: no OPL4 at all.
+        call    wait_busy
+        jp      c,no_opl4
+
+        ; Set NEW2 so that the Wave half listens on 7Eh/7Fh. The FM registers
+        ; read back on the YMF278B, so NEW (bit 0) is preserved.
+        ld      a,05h
+        out     (FM_ADDR1),a
+        call    wait_busy
+        in      a,(FM_DATA1)
+        and     01h
+        or      02h
+        ld      b,a
+        ld      a,05h
+        out     (FM_ADDR1),a
+        call    wait_busy
+        ld      a,b
+        out     (FM_DATA1),a
+
         ; Check that the Wave half of an OPL4 answers before changing it.
         ld      a,02h
-        out     (WAVE_ADDR),a
-        in      a,(WAVE_DATA)
+        call    read_wave
         cp      YMF278_ID
         jp      nz,no_opl4
 
-        ld      hl,081h                ; MSX-DOS command tail
+        ; MSX-DOS command tail: length at 0080h, text from 0081h. Terminate it
+        ; ourselves (MSX-DOS 1 leaves whatever was there; DOS 2 puts 00h).
+        ld      hl,081h
+        ld      a,(080h)
+        cp      127
+        jr      c,.len_ok
+        ld      a,126
+.len_ok:
+        ld      e,a
+        ld      d,0
+        push    hl
+        add     hl,de
+        ld      (hl),0
+        pop     hl
         call    skip_spaces
-        ld      a,(hl)
-        cp      0dh
+        call    is_end
         jp      z,show_levels
         and     0dfh                   ; ASCII uppercase
         cp      'F'
@@ -70,8 +112,10 @@ set_level:
         add     a,a
         add     a,b
         ld      b,a
+        call    wait_busy
         ld      a,d
         out     (WAVE_ADDR),a
+        call    wait_busy
         ld      a,b
         out     (WAVE_DATA),a
         ld      de,msg_done
@@ -118,11 +162,46 @@ show_levels:
         ld      de,msg_crlf
         jp      print_exit
 
-; Read a Wave register selected by A.  IN 7Fh is already wait-state protected
-; by the OPL4 core until the value has travelled back from the PCM domain.
+; Read a Wave register selected by A, waiting for BUSY before each access.
 read_wave:
+        push    af
+        call    wait_busy
+        pop     af
         out     (WAVE_ADDR),a
+        call    wait_busy
         in      a,(WAVE_DATA)
+        ret
+
+; Wait until BUSY (bit 0 of the FM status) is clear. Carry if the status reads
+; FFh (no chip on the bus) or BUSY never clears.
+wait_busy:
+        push    bc
+        ld      bc,0
+.again:
+        in      a,(FM_STATUS)
+        cp      0ffh
+        jr      z,.none
+        rra
+        jr      nc,.ready
+        dec     bc
+        ld      a,b
+        or      c
+        jr      nz,.again
+.none:
+        pop     bc
+        scf
+        ret
+.ready:
+        pop     bc
+        or      a                      ; clear carry
+        ret
+
+; Z if HL points at the end of the command tail (00h or 0Dh).
+is_end:
+        ld      a,(hl)
+        or      a
+        ret     z
+        cp      0dh
         ret
 
 ; A contains an OPL4 3-bit mix code. Print its human volume and attenuation.
@@ -144,8 +223,7 @@ decimal:
         ld      e,0
         ld      b,0                    ; number of digits
 .digit:
-        ld      a,(hl)
-        cp      0dh
+        call    is_end
         jr      z,.end
         cp      ' '
         jr      z,.end
@@ -221,8 +299,7 @@ skip_spaces:
         jr      skip_spaces
 
 skip_word:
-        ld      a,(hl)
-        cp      0dh
+        call    is_end
         ret     z
         cp      ' '
         ret     z
@@ -254,10 +331,10 @@ msg_no_opl4:
 msg_bad_arg:
         db      13,10,'Argumento no valido.',13,10,'$'
 msg_usage:
-        db      13,10,'MTVOL 1.0.1beta - nivel OPL4',13,10
+        db      13,10,'MTVOL 1.0.2 - nivel OPL4',13,10
         db      'Sin argumentos: muestra FM y WAVE actuales.',13,10
         db      'Uso: MTVOL FM|WAVE 0|3|6|9|12|15|18|M',13,10
-        db      'Volumen: 0=minimo, 18=maximo, M=silencio.',13,10,'$'
+        db      'De 3 en 3 dB: 0=minimo (-18 dB), 18=maximo (0 dB), M=silencio.',13,10,'$'
 msg_current:
         db      13,10,'Niveles actuales (volumen):',13,10,'$'
 msg_fm_left:
