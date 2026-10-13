@@ -95,7 +95,9 @@
         begin
             $display("== M. HDMI en el cable (receptor de verificacion) ==");
             rx.informe;
-            rx.comprobar_geometria(858, 525, 720, 480, 15, 62, 10, 6, 1, 1);
+            // 13/10/2026: porches 16/9, los de CEA-861 para el VIC 3 (hsync registrado y el -1 de
+            // vsync de hdmi_cea861.patch en hdmi.sv); el banco esperaba 15/10 desde la 1.0beta.
+            rx.comprobar_geometria(858, 525, 720, 480, 16, 62, 9, 6, 1, 1);
             // CTS: en la placa pixel y audio salen del mismo cristal (27 MHz y 54 MHz / 1125)
             // y vale 27000 exacto. Aqui los relojes salen de modelos con periodos redondeados
             // a ps (pixel 26,9993 MHz, audio 47,9962 kHz medidos) y da 27001,7: se tolera +/-2.
