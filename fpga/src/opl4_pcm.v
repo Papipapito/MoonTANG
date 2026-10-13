@@ -22,8 +22,10 @@
 //
 // BUS MSX -> MOTOR (CDC por toggles, como el resto del proyecto):
 //  - Se le reenvian TODAS las escrituras OPL4 (C4-C7 y 7E/7F): el motor
-//    rastrea NEW2 internamente viendo pasar las escrituras FM del bank1
-//    (A=2 con 0x05 y A=3 con bit1). El FM real lo sigue llevando opl4fm.
+//    rastrea NEW2 internamente viendo pasar las escrituras FM (direccion
+//    05h por C6h, A=2, y despues el dato con el bit 1 por C5h o por C7h,
+//    A=1 o A=3: el chip tiene un solo latch de direccion, 13/10/2026). El
+//    FM real lo sigue llevando opl4fm.
 //  - Las escrituras wave (A=5) se consumen en la siguiente CYCLE1_CE del
 //    motor: la FSM de bus espacia peticiones 12 CE para no pisar REG_WR.
 //  - Lecturas 7F: handshake disparado al INICIO del ciclo IN del Z80; el
@@ -158,10 +160,14 @@ reg        rd_done_t;               // x1: flip al completar lectura 7F
 reg [7:0]  rd_data_x;
 reg        pcm_t_x;                 // x1: flip a cada muestra nueva
 reg signed [15:0] pcm_l_x, pcm_r_x; // x1: OUT1 retenido
-// MoonTANG: mix_fm arranca a 0, el valor de encendido del chip. Sin esto, en
-// simulacion vale X hasta la primera muestra del motor (tras copiar la YRW801)
-// y la X llega al audio HDMI. (En la declaracion del puerto Gowin lo ignora.)
-initial mix_fm = 6'd0;
+// mix_fm arranca en 1Bh, el valor de encendido del chip (F8 = 1Bh: FM a -9 dB
+// por lado, como el YMF278B real y openMSX). Desde el 13/10/2026 el motor lo
+// pone tambien en su reset (YMF278B.sv); antes arrancaba en 0 y el FM del
+// software que nunca escribe F8 sonaba 8,5 dB mas alto que en el chip. El
+// initial (de MoonTANG) evita que en simulacion valga X hasta la primera
+// muestra del motor (tras copiar la YRW801) y la X llegue al audio HDMI. (En
+// la declaracion del puerto Gowin lo ignora.)
+initial mix_fm = 6'h1B;
 reg [5:0] mixfm_s0, mixfm_s1;       // _110: F8 motor->host (cuasi-estatico)
 always @(posedge clk_host) begin
     mixfm_s0 <= eng_mixfm;

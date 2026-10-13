@@ -1,6 +1,6 @@
 # MoonTANG 🌙
 
-![MoonTANG 1.0.1 beta — overview](docs/img/moontang-1.0beta-overview.png)
+![MoonTANG 1.0.2 beta — overview](docs/img/moontang-1.0beta-overview.png)
 
 > **Español.** MoonTANG es un cartucho MoonSound / MSX-Audio experimental para
 > MSX basado en una Tang Nano 20K. Añade OPL4, muestras PCM, HDMI opcional y,
@@ -28,15 +28,23 @@
 > other equipment. Test in SRAM first, connect it with the MSX powered off, and
 > verify power and J3 before use.
 
-## 1.0.1 beta: three WonderTANG versions / tres versiones WonderTANG
+## 1.0.2 beta: three WonderTANG versions / tres versiones WonderTANG
 
 All three builds are for the **WonderTANG 2.02b only**.
 
 | Bitstream | English | Español |
 |---|---|---|
-| [`moontang_wondertang202b_hdmi_1.0.1beta.fs`](bitstream/moontang_wondertang202b_hdmi_1.0.1beta.fs) | **OPL4 + HDMI.** MoonSound, stereo HDMI audio/video and mono sound into the MSX through `SOUNDIN`. Use this when you already own a real MSX-Audio. | **OPL4 + HDMI.** MoonSound, vídeo y audio HDMI estéreo y sonido mono hacia el MSX por `SOUNDIN`. Úsala si ya tienes un MSX-Audio real. |
-| [`moontang_wondertang202b_hdmi_msxaudio_1.0.1beta.fs`](bitstream/moontang_wondertang202b_hdmi_msxaudio_1.0.1beta.fs) | **OPL4 + MSX-Audio + HDMI.** Everything together: MoonSound, Y8950 MSX-Audio and HDMI. It is the largest build (91 % CLS); test it in SRAM first. | **OPL4 + MSX-Audio + HDMI.** Todo junto: MoonSound, MSX-Audio Y8950 y HDMI. Es la versión más grande (91 % CLS); pruébala primero en SRAM. |
-| [`moontang_wondertang202b_msxaudio_1.0.1beta.fs`](bitstream/moontang_wondertang202b_msxaudio_1.0.1beta.fs) | **OPL4 + MSX-Audio, no HDMI.** MoonSound plus Y8950 MSX-Audio, with sound through the MSX. | **OPL4 + MSX-Audio, sin HDMI.** MoonSound más MSX-Audio Y8950, con sonido por el propio MSX. |
+| [`moontang_wondertang202b_hdmi_1.0.2beta.fs`](bitstream/moontang_wondertang202b_hdmi_1.0.2beta.fs) | **OPL4 + HDMI.** MoonSound, stereo HDMI audio/video and mono sound into the MSX through `SOUNDIN`. Use this when you already own a real MSX-Audio. | **OPL4 + HDMI.** MoonSound, vídeo y audio HDMI estéreo y sonido mono hacia el MSX por `SOUNDIN`. Úsala si ya tienes un MSX-Audio real. |
+| [`moontang_wondertang202b_hdmi_msxaudio_1.0.2beta.fs`](bitstream/moontang_wondertang202b_hdmi_msxaudio_1.0.2beta.fs) | **OPL4 + MSX-Audio + HDMI.** Everything together: MoonSound, Y8950 MSX-Audio and HDMI. It is the largest build (91 % CLS); test it in SRAM first. | **OPL4 + MSX-Audio + HDMI.** Todo junto: MoonSound, MSX-Audio Y8950 y HDMI. Es la versión más grande (91 % CLS); pruébala primero en SRAM. |
+| [`moontang_wondertang202b_msxaudio_1.0.2beta.fs`](bitstream/moontang_wondertang202b_msxaudio_1.0.2beta.fs) | **OPL4 + MSX-Audio, no HDMI.** MoonSound plus Y8950 MSX-Audio, with sound through the MSX. | **OPL4 + MSX-Audio, sin HDMI.** MoonSound más MSX-Audio Y8950, con sonido por el propio MSX. |
+
+### Releases
+
+| Release | What it brings |
+|---|---|
+| **1.0.2beta** | The OPL4 takes NEW2 with the data on `C5h` as well as on `C7h`, as the chip does (`C7h` mirrors `C5h`): the disks that use the Moonsoft MoonBlaster Wave BASIC driver (Moonsound Music Collection 1, Musix Dizk 3) were silent. `F8h` resets to `1Bh` like the chip (FM at −9 dB per side; it used to start at `00h`). FM vibrato and tremolo as on the YMF262 (vibrato 6.05 Hz, ±12 cents; tremolo 4.9 dB at 3.7 Hz; before, a 217 Hz wobble and no tremolo). `MTVOL.COM` 1.0.2. |
+| 1.0.1beta | Wavetable 2.87 dB lower (fixed −8.87 dB trim) so PCM instruments no longer sit above the FM; `MTVOL.COM`, to set the OPL4 FM and Wave levels from MSX-DOS. |
+| 1.0beta | The three WonderTANG 2.02b bitstreams; the HDMI output recovers from a PLL lock loss. |
 
 ### Before flashing / antes de grabar
 

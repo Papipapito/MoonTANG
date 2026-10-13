@@ -23,9 +23,9 @@ hardware yet. This is the bring‑up guide.
 
 | Bitstream | What it does |
 |---|---|
-| `bitstream/moontang_wondertang202b_msxaudio_1.0.1beta.fs` | MoonSound **and MSX‑Audio**, without HDMI. Sound to the MSX only. |
-| `bitstream/moontang_wondertang202b_hdmi_1.0.1beta.fs` | MoonSound with HDMI: sound to the MSX **and**, at the same time, stereo sound and a VU meter on the Tang's HDMI connector. |
-| `bitstream/moontang_wondertang202b_hdmi_msxaudio_1.0.1beta.fs` | MoonSound, MSX‑Audio **and** HDMI together. This is the high-occupancy beta build. |
+| `bitstream/moontang_wondertang202b_msxaudio_1.0.2beta.fs` | MoonSound **and MSX‑Audio**, without HDMI. Sound to the MSX only. |
+| `bitstream/moontang_wondertang202b_hdmi_1.0.2beta.fs` | MoonSound with HDMI: sound to the MSX **and**, at the same time, stereo sound and a VU meter on the Tang's HDMI connector. |
+| `bitstream/moontang_wondertang202b_hdmi_msxaudio_1.0.2beta.fs` | MoonSound, MSX‑Audio **and** HDMI together. This is the high-occupancy beta build. |
 
 Which one:
 
@@ -143,7 +143,8 @@ SDRAM.
 - **Detection right after power‑up.** For the ~2 s the wave ROM is being copied the
   PCM engine is held in reset: a program that looks for the MoonSound in that
   window will not see the wavetable. Wait for the LED to stay on.
-- **Level.** FM keeps the OPL4 `F8h` setting. The wavetable keeps `F9h` and has
+- **Level.** FM follows the OPL4 `F8h` setting, which is `1Bh` after a reset (−9 dB
+  per side), as on the real chip. The wavetable keeps `F9h` and has
   an additional fixed 8.87 dB trim (2.87 dB lower than the original MoonTANG
   6 dB setting) so PCM instruments do not dominate at the reset level.
   With the MSX‑Audio bitstream the Y8950 is added with the MSXimus balance,

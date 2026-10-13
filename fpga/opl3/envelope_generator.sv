@@ -7,6 +7,12 @@
 #   DESCRIPTION:
 #
 #   CHANGE HISTORY:
+#   13 Oct 2026    MSXimus (Papipapito)
+#       El bit AM se lleva por el pipeline (am_p) junto con el resto de campos
+#       del operador. Antes se leia en p2 el del operador SIGUIENTE (con
+#       sample_clk_en cada 2 ciclos, el p0 de ese instante es el del slot
+#       k+1) y el tremolo salia nulo con AM en el slot correcto.
+#
 #   19 June 2024     Greg Taylor
 #       Refactored to match implementation in https://github.com/nukeykt/Nuked-OPL3
 #
@@ -107,6 +113,7 @@ module envelope_generator
     logic [PIPELINE_DELAY:1] [ENV_WIDTH-1:0] env_int_p;
     logic [PIPELINE_DELAY:1] key_on_p;
     logic [PIPELINE_DELAY:1] eg_reset_p;
+    logic [PIPELINE_DELAY:1] am_p;
 
     pipeline_sr #(
         .ENDING_CYCLE(PIPELINE_DELAY)
@@ -177,6 +184,15 @@ module envelope_generator
         .clk,
         .in(eg_reset_p0),
         .out(eg_reset_p)
+    );
+
+    pipeline_sr #(
+        .DATA_WIDTH(1),
+        .ENDING_CYCLE(PIPELINE_DELAY)
+    ) am_sr (
+        .clk,
+        .in(am),
+        .out(am_p)
     );
 
     ksl_add_rom ksl_add_rom (
@@ -310,6 +326,6 @@ module envelope_generator
     always_comb tl_shifted_p2 = tl_p[2] << 2;
 
     always_ff @(posedge clk)
-        env_p3 <= env_int_p[2] + tl_shifted_p2 + ksl_add_p2 + (am ? am_val_p2 : 0); // max val 1044
+        env_p3 <= env_int_p[2] + tl_shifted_p2 + ksl_add_p2 + (am_p[2] ? am_val_p2 : 0); // max val 1044
 endmodule
 `default_nettype wire

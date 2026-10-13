@@ -9,8 +9,8 @@
 // 5379b34b, 2026-07-14). Derived from MAME's ymf278b.cpp, BSD-3-Clause, holders
 // R. Belmont / Olivier Galibert / hap. RAM primitives reworked for Gowin by the
 // MSXimus project (era v3: block RAM with per-slot sweep). Below this header the
-// file is byte-identical to the MSXimus Z one of 05/10/2026 (slot register
-// read-back fix).
+// file is byte-identical to the MSXimus Z one of 13/10/2026 (slot register
+// read-back fix, F8 = 1Bh after reset, NEW2 also with the data on C5h).
 // See THIRD_PARTY/NOTICE.md.
 // ============================================================================
 module YMF278B (
@@ -950,7 +950,7 @@ module YMF278B (
 			MEMMODE <= 1'sb0;
 			MEMADDR <= 1'sb0;
 			MEMDAT <= 1'sb0;
-			MIXFM <= 1'sb0;
+			MIXFM <= 6'h1b;
 			MIXPCM <= 1'sb0;
 			REG_Q <= 1'sb0;
 			{BUSY, BUSY2} <= 0;
@@ -988,11 +988,11 @@ module YMF278B (
 				REG_RD <= 1;
 				BUSY <= 1;
 			end
-			if ((!WR_N && WR_N_OLD) && !CS_N) begin
-				REG_NEW_SEL <= 0;
+			if ((!WR_N && WR_N_OLD) && !CS_N)
 				case (A)
+					3'h0: REG_NEW_SEL <= 0;
 					3'h2: REG_NEW_SEL <= DI == 8'h05;
-					3'h3:
+					3'h1, 3'h3:
 						if (REG_NEW_SEL && DI[1]) begin
 							NEW2 <= 1;
 							LD2 <= 1;
@@ -1007,7 +1007,6 @@ module YMF278B (
 							BUSY <= 1;
 						end
 				endcase
-			end
 			if ((OP7[23-:5] == 5'd23) && SLOT1_CE) begin
 				if (LD_WAIT)
 					LD_WAIT <= LD_WAIT - 4'd1;

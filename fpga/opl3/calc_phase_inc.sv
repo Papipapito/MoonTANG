@@ -8,6 +8,12 @@
 #   Prepare the phase increment for the NCO (calc multiplier and vibrato)
 #
 #   CHANGE HISTORY:
+#   13 Oct 2026    MSXimus (Papipapito)
+#       El vibrato se aplica al F-NUMBER, con signo, ANTES del desplazamiento
+#       por bloque y del multiplicador (canon Nuked-OPL3 / YMF262). Antes se
+#       sumaba sin signo a la salida, y solo era correcto a bloque 1 y mult 1.
+#       pre_mult gana un bit (fnum + vibrato llega a 1030). Misma latencia.
+#
 #   13 Oct 2014    Greg Taylor
 #       Initial version
 #
@@ -56,16 +62,27 @@ module calc_phase_inc
     input wire dvb,
     output logic [PHASE_ACC_WIDTH-1:0] phase_inc_p2
 );
-    localparam PIPELINE_DELAY = 2;
 
-    logic signed [REG_FNUM_WIDTH+2**REG_BLOCK_WIDTH-1-1:0] pre_mult_p0;
-    logic signed [REG_FNUM_WIDTH+2**REG_BLOCK_WIDTH-1-1:0] pre_mult_p1 = 0;
+    // un bit mas que antes: fnum + vibrato llega a 1030 y (1030 << 7) >> 1 pasa de 16 bits
+    logic signed [REG_FNUM_WIDTH+2**REG_BLOCK_WIDTH-1:0] pre_mult_p0;
+    logic signed [REG_FNUM_WIDTH+2**REG_BLOCK_WIDTH-1:0] pre_mult_p1 = 0;
     logic signed [PHASE_ACC_WIDTH-1:0] post_mult_p2 = 0;
-    logic [VIB_VAL_WIDTH-1:0] vib_val_p2;
-    logic [PIPELINE_DELAY:1] vib_p;
+    logic signed [VIB_VAL_WIDTH:0] vib_val_p0;
+    logic [REG_FNUM_WIDTH:0] fnum_vib_p0;
     logic [$clog2(30)-1:0] multiplier_p1 = 0;
 
-    always_comb pre_mult_p0 = (fnum << block) >> 1;
+    /*
+     * El vibrato se suma al F-NUMBER, con signo, antes del bloque y de mult.
+     * Con la escalera de vibrato.sv el resultado nunca es negativo
+     * (|vib_val| <= fnum >> 7) ni pasa de 1030.
+     */
+    always_comb
+        if (vib)
+            fnum_vib_p0 = signed'({1'b0, fnum}) + vib_val_p0;
+        else
+            fnum_vib_p0 = fnum;
+
+    always_comb pre_mult_p0 = (fnum_vib_p0 << block) >> 1;
 
     always_ff @(posedge clk)
         unique case (mult)
@@ -92,19 +109,7 @@ module calc_phase_inc
         post_mult_p2 <= (pre_mult_p1*multiplier_p1) >> 1;
     end
 
-    pipeline_sr #(
-        .ENDING_CYCLE(PIPELINE_DELAY)
-    ) vib_sr (
-        .clk,
-        .in(vib),
-        .out(vib_p)
-    );
-
-    always_comb
-        if (vib_p[2])
-            phase_inc_p2 = post_mult_p2 + vib_val_p2;
-        else
-            phase_inc_p2 = post_mult_p2;
+    always_comb phase_inc_p2 = post_mult_p2;
 
     /*
      * Calculate vib_val
