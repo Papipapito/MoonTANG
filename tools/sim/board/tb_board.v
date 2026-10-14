@@ -1111,7 +1111,11 @@ module tb_board;
         // (las tramas L y R se cargan con 10 us de diferencia: no tienen por que
         //  ser iguales; que el mono lleva LOS DOS canales se comprueba en la fase I)
         wv_w(8'h68, 8'h40);                         // KEY OFF + DAMP
-        #2_500_000; audio_clear; #400_000;
+        // El motor no implementa DAMP: suelta a la tasa RR = 1. Desde 1.0.3beta la
+        // envolvente va a la velocidad del chip (antes cada paso se aplicaba dos
+        // veces) y la cola tarda ~2,2x mas en llegar a 0; con 6 ms el residuo PCM
+        // ya es 0 cuando llega la FM de la fase I (hrx_solo_l del banco HDMI).
+        #6_000_000; audio_clear; #400_000;
         ok(spk_max < 200 && spk_min > -200, "KEY OFF: silencio");
 
         // ==============================================================

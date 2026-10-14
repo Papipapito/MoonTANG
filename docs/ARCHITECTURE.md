@@ -266,13 +266,13 @@ Cost, Gowin 1.9.12.03, WonderTANG without HDMI:
 
 | | Without MSX‑Audio | With MSX‑Audio |
 |---|---|---|
-| Logic | 8 717 (43 %) | 11 264 (55 %) |
-| CLS | 6 244 (61 %) | 8 405 (82 %) |
-| Registers | 4 823 | 7 510 |
+| Logic | 8 717 (43 %) | 11 223 (55 %) |
+| CLS | 6 244 (61 %) | 8 396 (81 %) |
+| Registers | 4 823 | 7 519 |
 | BSRAM | 15 / 46 | 17 / 46 |
 | DSP | 1.5 | 3.5 |
 | Global clock nets (PRIMARY) | 8 / 8 | 8 / 8, the same ones |
-| Setup slack at 108 / 54 MHz | 3.17 / 8.31 ns | 2.52 / 7.16 ns |
+| Setup slack at 108 / 54 MHz | 3.17 / 8.31 ns | 2.24 / 6.21 ns |
 | Setup / hold violations | 0 / 0 | 0 / 0 |
 
 The experimental WonderTANG bitstream with HDMI **and** the MSX‑Audio, against the
@@ -280,13 +280,13 @@ HDMI one:
 
 | | HDMI | HDMI + MSX‑Audio (experimental) |
 |---|---|---|
-| Logic | 11 326 (55 %) | 14 260 (69 %) |
-| CLS | 7 843 (76 %) | 9 418 (91 %) |
-| Registers | 5 916 | 8 710 |
+| Logic | 11 469 (56 %) | 14 363 (70 %) |
+| CLS | 7 915 (77 %) | 9 337 (91 %) |
+| Registers | 5 924 | 8 718 |
 | BSRAM | 16 / 46 | 18 / 46 |
 | DSP | 1.5 | 3.5 |
 | Global clock nets (PRIMARY) | 8 / 8 | 8 / 8, the same ones |
-| Setup slack at 108 MHz | 2.22 ns | 1.94 ns (1.2 ns or more in all the builds tried) |
+| Setup slack at 108 MHz | 1.85 ns | 1.47 ns (1.2 ns or more in all the builds tried) |
 | Setup / hold violations | 0 / 0 | 0 / 0 |
 
 At 91 % of the CLS it is full; [WONDERTANG.md](WONDERTANG.md#experimental-hdmi-and-msx-audio-together)

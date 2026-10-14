@@ -181,8 +181,8 @@ of them do, at the same time. The VU meter gets a seventh bar, **MSX‑AUDIO** (
 what the Y8950 adds to the mix), between WAVE and OUT. It is flashed like the others
 (the `.fs` at `0x000000`, the YRW801 at `0x200000`).
 
-It fills the chip: 68 % of the logic and 90 % of the CLS (the HDMI bitstream: 55 %
-and 76 %). Gowin closes timing on every build tried: 0 setup and 0 hold violations
+It fills the chip: 70 % of the logic and 91 % of the CLS (the HDMI bitstream: 56 %
+and 77 %). Gowin closes timing on every build tried: 0 setup and 0 hold violations
 in 6 builds — 4 different placements, two of them routed twice, and two of the
 placements with the design slightly perturbed — with at least 1.2 ns of setup
 margin (hold: at least 0.074 ns, on BSRAM data inputs). This
