@@ -71,7 +71,7 @@ module moontang_core #(
     // ---- audio, en clk_54m ----
     output wire signed [15:0] fm_l,     // FM ya atenuado por el registro F8
     output wire signed [15:0] fm_r,
-    output wire signed [15:0] wave_l,   // wave ya con su trim de mezcla (-8.87 dB nominal)
+    output wire signed [15:0] wave_l,   // wave ya con su trim de mezcla (-8.87 dB nominal, por canal)
     output wire signed [15:0] wave_r,
     output reg  signed [15:0] mix_l = 16'sd0,   // FM + wave, saturado
     output reg  signed [15:0] mix_r = 16'sd0,
@@ -347,11 +347,19 @@ module moontang_core #(
     //     (MixCalc -3 dB/paso; 0,75x = (x>>1)+(x>>2)). El shift vive en un wire
     //     SIGNED propio: un literal sin signo en el ternario degrada el >>> a
     //     shift logico y rectifica los negativos (leccion _85/_115).
-    //   - wave: L y R del motor a 23/64 = 0.359375 (-8.87 dB). La version
-    //     inicial usaba 1/2 (-6.02 dB); reducirlo 2.87 dB corrige que los
-    //     instrumentos PCM quedaban por delante del FM al arrancar (F8=1Bh).
-    //     Se expresa como shifts/sumas para no introducir un multiplicador en
-    //     la GW2AR-18, que ya esta muy cerca de su limite de CLS.
+    //   - wave: L y R del motor x2.03125 (= 2 + 1/32) en 18 bits. Desde el
+    //     14/10/2026 el motor baja cada slot 15 dB (x0.1768) ANTES de sumar,
+    //     como el chip, para que los 24 canales quepan sin recortar: antes
+    //     sumaban a plena escala en un acumulador de 18 bits y MiG recortaba
+    //     el 17-21 % de las muestras (y chasqueaba al envolver el acumulador).
+    //     23/64 / 0.1768 = 2.033, asi que el nivel POR CANAL es el de siempre:
+    //     23/64 = 0.359375 (-8.87 dB). La version inicial usaba 1/2 (-6.02
+    //     dB); reducirlo 2.87 dB corrige que los instrumentos PCM quedaban por
+    //     delante del FM al arrancar (F8=1Bh). Con muchas voces la suma ya no
+    //     envuelve: la mezcla de 18 bits (|.| <= 99 328 < 2^17) satura una vez
+    //     a 16 bits (o pasa por la rodilla de moontang_mix_y8950). Se expresa
+    //     como shifts/sumas para no introducir un multiplicador en la
+    //     GW2AR-18, que ya esta muy cerca de su limite de CLS.
     // ==================================================================
     wire signed [15:0] o4fm_sl = $signed(opl4fm_wav_l);
     wire signed [15:0] o4fm_sr = $signed(opl4fm_wav_r);
@@ -362,19 +370,27 @@ module moontang_core #(
     assign fm_l = (opl4_mixfm[2:0] == 3'd7) ? 16'sd0 : o4fm_al;
     assign fm_r = (opl4_mixfm[2:0] == 3'd7) ? 16'sd0 : o4fm_ar;
 
-    wire signed [15:0] o4pcm_sl = $signed(opl4pcm_l);
-    wire signed [15:0] o4pcm_sr = $signed(opl4pcm_r);
-    // 1/4 + 1/8 - 1/64 = 23/64. Frente al 1/2 anterior: -2.87 dB.
-    assign wave_l = (o4pcm_sl >>> 2) + (o4pcm_sl >>> 3) - (o4pcm_sl >>> 6);
-    assign wave_r = (o4pcm_sr >>> 2) + (o4pcm_sr >>> 3) - (o4pcm_sr >>> 6);
-
     function automatic signed [15:0] sat16(input signed [17:0] v);
         sat16 = (v >  18'sd32767) ? 16'sh7FFF :
                 (v < -18'sd32768) ? 16'sh8000 : v[15:0];
     endfunction
 
-    wire signed [17:0] mixL = {{2{fm_l[15]}}, fm_l} + {{2{wave_l[15]}}, wave_l};
-    wire signed [17:0] mixR = {{2{fm_r[15]}}, fm_r} + {{2{wave_r[15]}}, wave_r};
+    wire signed [15:0] o4pcm_sl = $signed(opl4pcm_l);
+    wire signed [15:0] o4pcm_sr = $signed(opl4pcm_r);
+    wire signed [17:0] o4pcm_el = {{2{o4pcm_sl[15]}}, o4pcm_sl};
+    wire signed [17:0] o4pcm_er = {{2{o4pcm_sr[15]}}, o4pcm_sr};
+    // x2.03125 = 2 + 1/32: |motor| <= 32 768 (el motor ya recorta a 16 bits)
+    // -> |wave18| <= 66 560, sin desbordar los 18 bits. Frente al 23/64 de
+    // antes, con el motor a -15 dB por slot: mismo nivel por canal.
+    wire signed [17:0] wave18_l = (o4pcm_el <<< 1) + (o4pcm_el >>> 5);
+    wire signed [17:0] wave18_r = (o4pcm_er <<< 1) + (o4pcm_er >>> 5);
+    // wave_l/r (16 bits, saturados) solo alimentan el vumetro (moontang_av)
+    assign wave_l = sat16(wave18_l);
+    assign wave_r = sat16(wave18_r);
+
+    // FM +-32 768 + wave +-66 560: |.| <= 99 328 < 2^17, cabe en 18 bits
+    wire signed [17:0] mixL = {{2{fm_l[15]}}, fm_l} + wave18_l;
+    wire signed [17:0] mixR = {{2{fm_r[15]}}, fm_r} + wave18_r;
 
     generate
     if (!Y8950) begin : g_mix

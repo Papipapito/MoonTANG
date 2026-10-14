@@ -165,10 +165,14 @@ tnCart use.
 
 The mixer uses each FM channel side at its native level with the attenuation of
 register `F8h`. The wave output keeps the `F9h` attenuation of the YMF278B and
-then has a fixed `23/64` trim (−8.87 dB, or −2.87 dB relative to the original
-MoonTANG balance). This compensates the PCM voices being too prominent against
-the OPL3 after reset (`F8h = 1Bh`). The core saturates the result to 16 bits and
-outputs left, right and their half-sum.
+then has a fixed `23/64` trim per voice (−8.87 dB, or −2.87 dB relative to the
+original MoonTANG balance). This compensates the PCM voices being too prominent
+against the OPL3 after reset (`F8h = 1Bh`). The engine attenuates each of its 24
+voices 15 dB (×0.1768) before adding them, as the chip does, so the sum has
+headroom; the core multiplies the engine output by `2 + 1/32` in 18 bits
+(`23/64 ÷ 0.1768 = 2.03`), which leaves the level of one voice as it was. FM plus
+wave fit in 18 bits (|sum| ≤ 99 328), and the core saturates the result to 16
+bits and outputs left, right and their half-sum.
 
 - **WonderTANG.** The Tang's amplifier is mono, so both I2S frames carry the
   half‑sum. The HDMI bitstream adds the HDMI output below, in parallel. `i2s_feed` latches each sample right after the frame clock edge, so the

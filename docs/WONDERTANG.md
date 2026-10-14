@@ -23,9 +23,9 @@ hardware yet. This is the bring‑up guide.
 
 | Bitstream | What it does |
 |---|---|
-| `bitstream/moontang_wondertang202b_msxaudio_1.0.2beta.fs` | MoonSound **and MSX‑Audio**, without HDMI. Sound to the MSX only. |
-| `bitstream/moontang_wondertang202b_hdmi_1.0.2beta.fs` | MoonSound with HDMI: sound to the MSX **and**, at the same time, stereo sound and a VU meter on the Tang's HDMI connector. |
-| `bitstream/moontang_wondertang202b_hdmi_msxaudio_1.0.2beta.fs` | MoonSound, MSX‑Audio **and** HDMI together. This is the high-occupancy beta build. |
+| `bitstream/moontang_wondertang202b_msxaudio_1.0.3beta.fs` | MoonSound **and MSX‑Audio**, without HDMI. Sound to the MSX only. |
+| `bitstream/moontang_wondertang202b_hdmi_1.0.3beta.fs` | MoonSound with HDMI: sound to the MSX **and**, at the same time, stereo sound and a VU meter on the Tang's HDMI connector. |
+| `bitstream/moontang_wondertang202b_hdmi_msxaudio_1.0.3beta.fs` | MoonSound, MSX‑Audio **and** HDMI together. This is the high-occupancy beta build. |
 
 Which one:
 
@@ -147,6 +147,9 @@ SDRAM.
   per side), as on the real chip. The wavetable keeps `F9h` and has
   an additional fixed 8.87 dB trim (2.87 dB lower than the original MoonTANG
   6 dB setting) so PCM instruments do not dominate at the reset level.
+  The wave engine attenuates each of its 24 voices 15 dB before adding them
+  (as the chip does, so dense music does not clip) and the mixer gives that
+  back (×2.03), so the level of a single voice is unchanged.
   With the MSX‑Audio bitstream the Y8950 is added with the MSXimus balance,
   and a limiter compresses the peaks of the sum above 3/4 of full scale (2:1)
   instead of clipping them; below that nothing changes. `tools/msx/MTVOL.COM`
