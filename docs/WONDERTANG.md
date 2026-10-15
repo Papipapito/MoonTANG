@@ -23,9 +23,9 @@ hardware yet. This is the bring‑up guide.
 
 | Bitstream | What it does |
 |---|---|
-| `bitstream/moontang_wondertang202b_msxaudio_1.0.3beta.fs` | MoonSound **and MSX‑Audio**, without HDMI. Sound to the MSX only. |
-| `bitstream/moontang_wondertang202b_hdmi_1.0.3beta.fs` | MoonSound with HDMI: sound to the MSX **and**, at the same time, stereo sound and a VU meter on the Tang's HDMI connector. |
-| `bitstream/moontang_wondertang202b_hdmi_msxaudio_1.0.3beta.fs` | MoonSound, MSX‑Audio **and** HDMI together. This is the high-occupancy beta build. |
+| `bitstream/moontang_wondertang202b_msxaudio_1.0.4beta.fs` | MoonSound **and MSX‑Audio**, without HDMI. Sound to the MSX only. |
+| `bitstream/moontang_wondertang202b_hdmi_1.0.4beta.fs` | MoonSound with HDMI: sound to the MSX **and**, at the same time, stereo sound and a VU meter on the Tang's HDMI connector. |
+| `bitstream/moontang_wondertang202b_hdmi_msxaudio_1.0.4beta.fs` | MoonSound, MSX‑Audio **and** HDMI together. This is the high-occupancy beta build. |
 
 Which one:
 

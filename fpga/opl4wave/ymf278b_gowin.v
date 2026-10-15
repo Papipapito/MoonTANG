@@ -9,11 +9,14 @@
 // 5379b34b, 2026-07-14). Derived from MAME's ymf278b.cpp, BSD-3-Clause, holders
 // R. Belmont / Olivier Galibert / hap. RAM primitives reworked for Gowin by the
 // MSXimus project (era v3: block RAM with per-slot sweep). Below this header the
-// file is byte-identical to the MSXimus Z one of 14/10/2026 (slot register
-// read-back fix, F8 = 1Bh after reset, NEW2 also with the data on C5h, and the
-// wave engine like the chip: 24-voice headroom at -15 dB per slot, TL fades
-// with LD=0, envelope rates per YMF278B, panning -3 dB/step, silence below
-// -60 dB).
+// file is byte-identical to the MSXimus Z one of 15/10/2026, Z1.2.9 (slot register
+// read-back fix, F8 = 1Bh after reset, NEW2 set and cleared with the data on
+// C5h/C7h, and the wave engine like the chip: 24-voice headroom at -15 dB per
+// slot, TL fades with LD=0, envelope rates per YMF278B, panning -3 dB/step,
+// silence below -60 dB, DAMP and pseudo-reverb, DL in 3 dB steps, the level
+// sum (envelope + TL + tremolo) saturating instead of wrapping, register reads
+// through 7Fh that no longer disturb other slots, LFO reset on its own slot and
+// no output while the memory access mode is on).
 // See THIRD_PARTY/NOTICE.md.
 // ============================================================================
 module YMF278B (
@@ -176,11 +179,11 @@ module YMF278B (
 	wire [2:0] KEY_RAM_Q;
 	reg [21:0] LFO_RAM_D = 0;
 	wire [21:0] LFO_RAM_Q;
+	localparam RT_DM = 3'd7;
+	reg [7:0] rt_q [0:7];
+	wire [7:0] REG_DM_Q = rt_q[RT_DM];
 	wire [15:0] REG_FNUM_Q;
 	wire [7:0] REG_LFO_Q;
-	localparam RT_PN = 3'd6;
-	reg [7:0] rt_q [0:6];
-	wire [7:0] REG_PAN_Q = rt_q[RT_PN];
 	wire REG_PAN_SEL = (REG_A >= 8'h68) && (REG_A <= 8'h7f);
 	localparam RT_WT = 3'd4;
 	wire [7:0] REG_WTN_Q = rt_q[RT_WT];
@@ -288,7 +291,7 @@ module YMF278B (
 					2'b00: begin
 						{OP1_OCT, OP1_PREVERB, OP1_FNUM} <= REG_FNUM_Q[15:1];
 						{OP1_LFO, OP1_VIB} <= REG_LFO_Q[5:0];
-						OP1_LFORST <= REG_PAN_Q[5];
+						OP1_LFORST <= REG_DM_Q[5];
 						OP1_WTN <= {REG_FNUM_Q[0], REG_WTN_Q};
 						{OP1_LOAD_POS, OP1_LFO_DIV, OP1_LFO_DATA} <= LFO_RAM_Q;
 					end
@@ -531,6 +534,8 @@ module YMF278B (
 	reg [3:0] OP4_DL = 0;
 	reg [3:0] OP4_OCT = 0;
 	reg OP4_FNUM9 = 0;
+	reg OP4_DAMP = 0;
+	reg OP4_PRVB = 0;
 	reg [9:0] OP4_EVOL = 0;
 	reg [1:0] OP4_EST = 0;
 	reg [18:0] SCNT = 0;
@@ -640,6 +645,16 @@ module YMF278B (
 		else if ((OP4_EST != YMF278B_PKG_EST_RELEASE) && OP4[6])
 			RATE = OP4_RR;
 		{EFF_RATE_OVR, EFF_RATE} = YMF278B_PKG_EffRateCalc(RATE, OP4_RC, OP4_OCT, OP4_FNUM9);
+		if ((OP4_EST != YMF278B_PKG_EST_ATTACK) && !((OP4_EST == YMF278B_PKG_EST_RELEASE) && OP4[7])) begin
+			if (OP4_DAMP) begin
+				EFF_RATE_OVR = 1'b0;
+				EFF_RATE = (OP4_EVOL < 10'h080 ? 6'd48 : 6'd63);
+			end
+			else if (OP4_PRVB && (OP4_EVOL >= 10'h0c0)) begin
+				EFF_RATE_OVR = 1'b0;
+				EFF_RATE = 6'd20;
+			end
+		end
 		ENV_STEP <= YMF278B_PKG_EnvStep(SCNT, EFF_RATE);
 		ENV_INC <= YMF278B_PKG_EnvInc(SCNT, EFF_RATE);
 	end
@@ -648,6 +663,8 @@ module YMF278B (
 	reg [11:0] EVOL_RAM_D = 0;
 	localparam RT_AM = 3'd3;
 	wire [7:0] REG_AM_Q = rt_q[RT_AM];
+	reg rt_dp4 = 0;
+	wire REG_DAMP_Q = rt_dp4;
 	localparam RT_R0 = 3'd0;
 	wire [7:0] REG_RATE0_Q = rt_q[RT_R0];
 	localparam RT_R1 = 3'd1;
@@ -688,12 +705,14 @@ module YMF278B (
 			OP5 <= YMF278B_PKG_OP5_RESET;
 			{OP4_AR, OP4_D1R, OP4_D2R, OP4_RR, OP4_RC, OP4_DL} <= 1'sb0;
 			{OP4_OCT, OP4_FNUM9} <= 1'sb0;
+			{OP4_DAMP, OP4_PRVB} <= 1'sb0;
 			{OP4_EST, OP4_EVOL} <= 1'sb0;
 		end
 		else if (!RES_N) begin
 			OP5 <= YMF278B_PKG_OP5_RESET;
 			{OP4_AR, OP4_D1R, OP4_D2R, OP4_RR, OP4_RC, OP4_DL} <= 1'sb0;
 			{OP4_OCT, OP4_FNUM9} <= 1'sb0;
+			{OP4_DAMP, OP4_PRVB} <= 1'sb0;
 			{OP4_EST, OP4_EVOL} <= 1'sb0;
 		end
 		else begin
@@ -702,10 +721,12 @@ module YMF278B (
 				{OP4_DL, OP4_D2R} <= REG_RATE1_Q;
 				{OP4_RC, OP4_RR} <= REG_RATE2_Q;
 				OP4_AM <= REG_AM_Q[2:0];
+				OP4_DAMP <= REG_DAMP_Q;
 				case (CYCLE_NUM[2:1])
 					2'b10: begin
 						OP4_OCT <= REG_FNUM_Q[15:12];
 						OP4_FNUM9 <= REG_FNUM_Q[10];
+						OP4_PRVB <= REG_FNUM_Q[11];
 						{OP4_EST, OP4_EVOL} <= EVOL_RAM_Q;
 						OP4_LFO_DATA <= LFO_RAM_Q[7:0];
 					end
@@ -743,7 +764,7 @@ module YMF278B (
 								NEW_EVOL = DECAY_VOL_CALC[9:0];
 							else
 								NEW_EVOL = 10'h3ff;
-							if (OP4_EVOL[9:6] == OP4_DL)
+							if (OP4_EVOL[9:5] >= {&OP4_DL, OP4_DL})
 								NEW_EST = YMF278B_PKG_EST_DECAY2;
 						end
 						YMF278B_PKG_EST_DECAY2:
@@ -786,10 +807,10 @@ module YMF278B (
 		input reg [9:0] LEVEL;
 		input reg [9:0] TL;
 		input reg [7:0] ALFO;
-		reg [10:0] SUM;
+		reg [11:0] SUM;
 		begin
-			SUM = ({1'b0, LEVEL} + {1'b0, TL}) + {3'b000, ALFO};
-			YMF278B_PKG_LevelAddTLALFO = (!SUM[10] ? SUM[9:0] : 10'h3ff);
+			SUM = ({2'b00, LEVEL} + {2'b00, TL}) + {4'b0000, ALFO};
+			YMF278B_PKG_LevelAddTLALFO = (SUM[11:10] == 2'b00 ? SUM[9:0] : 10'h3ff);
 		end
 	endfunction
 	localparam [33:0] YMF278B_PKG_OP6_RESET = 34'h000000000;
@@ -870,6 +891,8 @@ module YMF278B (
 	reg OP7_CH = 0;
 	reg [18:0] ACC_L = 0;
 	reg [18:0] ACC_R = 0;
+	localparam RT_PN = 3'd6;
+	wire [7:0] REG_PAN_Q = rt_q[RT_PN];
 	function signed [15:0] YMF278B_PKG_MixCalc;
 		input reg signed [15:0] WAVE;
 		input reg [2:0] MIX;
@@ -929,6 +952,8 @@ module YMF278B (
 	end
 	reg [15:0] PCM_L = 0;
 	reg [15:0] PCM_R = 0;
+	reg MM_SEEN = 0;
+	reg MM_HOLD = 0;
 	function signed [15:0] YMF278B_PKG_TrimWave19;
 		input reg signed [18:0] WAVE;
 		YMF278B_PKG_TrimWave19 = (WAVE[18] && (WAVE[17:15] != 3'b111) ? 16'h8000 : (!WAVE[18] && (WAVE[17:15] != 3'b000) ? 16'h7fff : WAVE[15:0]));
@@ -937,12 +962,19 @@ module YMF278B (
 		if (!RST_N) begin
 			PCM_L <= 1'sb0;
 			PCM_R <= 1'sb0;
+			{MM_SEEN, MM_HOLD} <= 1'sb0;
 		end
 		else if (!RES_N)
 			;
-		else if (((OP7[23-:5] == 5'd0) && (CYCLE_NUM[2:1] == 2'b00)) && CYCLE1_CE) begin
-			PCM_L <= (!SND_EN[2] ? 16'h0000 : YMF278B_PKG_TrimWave19(ACC_L));
-			PCM_R <= (!SND_EN[2] ? 16'h0000 : YMF278B_PKG_TrimWave19(ACC_R));
+		else begin
+			if (((OP7[23-:5] == 5'd0) && (CYCLE_NUM[2:1] == 2'b00)) && CYCLE1_CE) begin
+				PCM_L <= (((!SND_EN[2] || MEMMODE[0]) || MM_SEEN) || MM_HOLD ? 16'h0000 : YMF278B_PKG_TrimWave19(ACC_L));
+				PCM_R <= (((!SND_EN[2] || MEMMODE[0]) || MM_SEEN) || MM_HOLD ? 16'h0000 : YMF278B_PKG_TrimWave19(ACC_R));
+				MM_HOLD <= MM_SEEN;
+				MM_SEEN <= 0;
+			end
+			if (MEMMODE[0])
+				MM_SEEN <= 1;
 		end
 	reg MEM_WREQ = 0;
 	reg MEM_RREQ = 0;
@@ -1020,9 +1052,10 @@ module YMF278B (
 					3'h0: REG_NEW_SEL <= 0;
 					3'h2: REG_NEW_SEL <= DI == 8'h05;
 					3'h1, 3'h3:
-						if (REG_NEW_SEL && DI[1]) begin
-							NEW2 <= 1;
-							LD2 <= 1;
+						if (REG_NEW_SEL) begin
+							NEW2 <= DI[1];
+							if (DI[1])
+								LD2 <= 1;
 						end
 					3'h4:
 						if (NEW2)
@@ -1227,7 +1260,7 @@ module YMF278B (
 		.WRADDR((RST ? SLOT : REG_A[4:0] - 5'h18)),
 		.DATA((RST ? sv2v_uu_REG_FNUM0_ext_DATA_0 : REG_D)),
 		.WREN((RST ? 1'b1 : (REG_WR & REG_FNUM0_SEL) & CYCLE1_CE)),
-		.RDADDR((REG_RD ? REG_A[4:0] - 5'h18 : FNUM_RA)),
+		.RDADDR((REG_RD & REG_FNUM0_SEL ? REG_A[4:0] - 5'h18 : FNUM_RA)),
 		.Q(REG_FNUM_Q[15:8])
 	);
 	localparam sv2v_uu_REG_FNUM1_dw = 8;
@@ -1240,7 +1273,7 @@ module YMF278B (
 		.WRADDR((RST ? SLOT : REG_A[4:0] - 5'h00)),
 		.DATA((RST ? sv2v_uu_REG_FNUM1_ext_DATA_0 : REG_D)),
 		.WREN((RST ? 1'b1 : (REG_WR & REG_FNUM1_SEL) & CYCLE1_CE)),
-		.RDADDR((REG_RD ? REG_A[4:0] - 5'h00 : FNUM_RA)),
+		.RDADDR((REG_RD & REG_FNUM1_SEL ? REG_A[4:0] - 5'h00 : FNUM_RA)),
 		.Q(REG_FNUM_Q[7:0])
 	);
 	wire REG_LFO_LOAD = OP3[56-:4] == 4'h7;
@@ -1254,7 +1287,7 @@ module YMF278B (
 		.WRADDR((RST ? SLOT : (OP3[57] ? OP3[65-:5] : REG_A[4:0] - 5'h00))),
 		.DATA((RST ? sv2v_uu_REG_LFO_ext_DATA_0 : (OP3[57] ? MEM_D : REG_D))),
 		.WREN((RST ? 1'b1 : (OP3[57] ? REG_LFO_LOAD & SLOT0_CE : (REG_WR & REG_LFO_SEL) & CYCLE1_CE))),
-		.RDADDR((REG_RD ? REG_A[4:0] - 5'h00 : LFO_RA)),
+		.RDADDR((REG_RD & REG_LFO_SEL ? REG_A[4:0] - 5'h00 : LFO_RA)),
 		.Q(REG_LFO_Q)
 	);
 	always @(posedge CLK) begin
@@ -1280,17 +1313,18 @@ module YMF278B (
 	wire rt_cpurd = REG_RD & rt_sel;
 	wire [4:0] rt_slot_nx = (SLOT == 5'd23 ? 5'd0 : SLOT + 5'd1);
 	reg [2:0] rt_swp = 0;
-	wire [4:0] rt_swp_ad = (rt_swp == RT_WT ? rt_slot_nx : (rt_swp == RT_LV ? OP4[13-:5] : (rt_swp == RT_PN ? OP6[33-:5] : OP3[65-:5])));
+	wire [2:0] rt_swp_fld = (rt_swp == RT_DM ? RT_PN : rt_swp);
+	wire [4:0] rt_swp_ad = ((rt_swp == RT_WT) || (rt_swp == RT_DM) ? rt_slot_nx : (rt_swp == RT_LV ? OP4[13-:5] : (rt_swp == RT_PN ? OP6[33-:5] : OP3[65-:5])));
 	(* syn_ramstyle = "block_ram" *) reg [7:0] rt_mem [0:255];
 	initial begin : sv2v_autoblock_12
 		reg signed [31:0] ri = 0;
 		for (ri = 0; ri < 256; ri = ri + 1)
 			rt_mem[ri] = 1'sb0;
 	end
-	reg [7:0] rt_st [0:6];
+	reg [7:0] rt_st [0:7];
 	initial begin : sv2v_autoblock_13
 		reg signed [31:0] ri = 0;
-		for (ri = 0; ri < 7; ri = ri + 1)
+		for (ri = 0; ri < 8; ri = ri + 1)
 			begin
 				rt_q[ri] = 1'sb0;
 				rt_st[ri] = 1'sb0;
@@ -1316,7 +1350,7 @@ module YMF278B (
 		end
 		else if (rt_cpuw_go)
 			rt_cpuw_p <= 1'b0;
-		rt_rq <= rt_mem[(rt_cpurd ? {rt_fld, rt_idx} : {rt_swp, rt_swp_ad})];
+		rt_rq <= rt_mem[(rt_cpurd ? {rt_fld, rt_idx} : {rt_swp_fld, rt_swp_ad})];
 		rt_cap <= rt_swp;
 		rt_cap_on <= rt_swp_on & ~rt_cpurd;
 		rt_cpu_on <= rt_cpurd;
@@ -1324,6 +1358,8 @@ module YMF278B (
 			rt_cpu_q <= rt_rq;
 		else if (rt_cap_on)
 			rt_st[rt_cap] <= rt_rq;
+		if (SLOT1_CE)
+			rt_st[RT_DM] <= 1'sb0;
 		if (RST) begin
 			rt_q[RT_R0] <= 1'sb0;
 			rt_q[RT_R1] <= 1'sb0;
@@ -1331,6 +1367,7 @@ module YMF278B (
 			rt_q[RT_AM] <= 1'sb0;
 			rt_q[RT_LV] <= 1'sb0;
 			rt_q[RT_PN] <= 1'sb0;
+			rt_q[RT_DM] <= 1'sb0;
 		end
 		else if (SLOT1_CE) begin
 			rt_q[RT_R0] <= rt_st[RT_R0];
@@ -1339,6 +1376,7 @@ module YMF278B (
 			rt_q[RT_AM] <= rt_st[RT_AM];
 			rt_q[RT_LV] <= rt_st[RT_LV];
 			rt_q[RT_PN] <= rt_st[RT_PN];
+			rt_q[RT_DM] <= rt_st[RT_DM];
 		end
 		if (OP4[8])
 			rt_q[RT_WT] <= 1'sb0;
@@ -1349,12 +1387,20 @@ module YMF278B (
 			rt_swp <= 3'd0;
 		end
 		else if (rt_swp_on && !rt_cpurd) begin
-			if (rt_swp == RT_PN)
+			if (rt_swp == RT_DM)
 				rt_swp_on <= 1'b0;
 			else
 				rt_swp <= rt_swp + 3'd1;
 		end
 	end
+	reg rt_dp2 = 0;
+	reg rt_dp3 = 0;
+	always @(posedge CLK)
+		if (SLOT1_CE) begin
+			rt_dp2 <= REG_DM_Q[6];
+			rt_dp3 <= rt_dp2;
+			rt_dp4 <= rt_dp3;
+		end
 	wire [7:0] OPL3_DO;
 	wire [15:0] OPL3_OUT_A;
 	wire [15:0] OPL3_OUT_B;

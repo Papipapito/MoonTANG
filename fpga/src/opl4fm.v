@@ -122,13 +122,16 @@ assign wave_dout = 8'h20;            // device ID del YMF278B (deteccion)
 // extra de la lectura registrada es invisible: sel_reg_* cambia con la
 // escritura de seleccion, MUCHOS ciclos de clk_host antes de que el Z80
 // muestree el dato del readback (una I/O read son ~15 ciclos de 54MHz).
-// v3b010+: los DOS bancos comparten UNA BSRAM 512x8 (bit alto = banco):
-// el Z80 solo puede leer un banco a la vez (C5 o C7) y solo escribe uno
-// por ciclo de bus (strobes we0/we1 excluyentes por addr_r[1:0]).
+// v3b010+: los DOS bancos comparten UNA BSRAM 512x8 (bit alto = banco).
+// 15/10/2026: el chip tiene UN solo latch de direccion FM (openMSX: opl3latch;
+// C4h = banco 0, C6h = banco 1) y el dato vale igual por C5h que por C7h. El
+// banco de cada escritura y de cada lectura lo fija el ULTIMO C4h/C6h, no el
+// puerto de datos: antes C6h=05h + C5h=03h (WAVEDRVR) metia el 03h en el banco 0
+// sobre el ultimo registro de C4h y la relectura del 105h por C7h no lo veia.
 (* syn_ramstyle = "block_ram" *) reg [7:0] shadow [0:511];
 reg [7:0] sh_q;
-reg [7:0] sel_reg_b0;
-reg [7:0] sel_reg_b1;
+reg [7:0] sel_reg;      // direccion del latch unico
+reg       sel_bank;     // banco del latch unico (C4h = 0, C6h = 1)
 
 reg  prev_wr_active;
 wire wr_active = cs_opl3 && (wr_r == 1'b0);
@@ -137,15 +140,15 @@ wire wr_strobe = wr_active && !prev_wr_active;
 always @(posedge clk_host or negedge rst_n) begin
     if (!rst_n) begin
         prev_wr_active <= 1'b0;
-        sel_reg_b0 <= 8'd0;
-        sel_reg_b1 <= 8'd0;
+        sel_reg  <= 8'd0;
+        sel_bank <= 1'b0;
     end
     else begin
         prev_wr_active <= wr_active;
         if (wr_strobe) begin
             case (addr_r[1:0])
-                2'b00: sel_reg_b0 <= din_r;
-                2'b10: sel_reg_b1 <= din_r;
+                2'b00: begin sel_bank <= 1'b0; sel_reg <= din_r; end
+                2'b10: begin sel_bank <= 1'b1; sel_reg <= din_r; end
                 default: ;
             endcase
         end
@@ -157,24 +160,24 @@ end
 // demasiado corto, -0.02): dato/indice/enable se recapturan a contraflanco
 // y la BSRAM los ve estables medio ciclo a cada lado. La escritura aterriza
 // 1 ciclo despues: irrelevante (las lecturas de shadow van a ritmo de CPU).
-reg       shw_we0_n, shw_we1_n;
-reg [7:0] shw_idx0_n, shw_idx1_n, shw_dat_n;
+// 15/10/2026: un solo strobe de dato (C5h o C7h, addr_r[0]) y un solo indice {banco, registro} del latch unico.
+reg       shw_we_n;
+reg [8:0] shw_idx_n;
+reg [7:0] shw_dat_n;
 always @(negedge clk_host) begin
-    shw_we0_n  <= wr_strobe && (addr_r[1:0] == 2'b01);
-    shw_we1_n  <= wr_strobe && (addr_r[1:0] == 2'b11);
-    shw_idx0_n <= sel_reg_b0;
-    shw_idx1_n <= sel_reg_b1;
-    shw_dat_n  <= din_r;
+    shw_we_n  <= wr_strobe && addr_r[0];
+    shw_idx_n <= {sel_bank, sel_reg};
+    shw_dat_n <= din_r;
 end
-wire       sh_we    = shw_we0_n | shw_we1_n;
-wire [8:0] sh_waddr = shw_we1_n ? {1'b1, shw_idx1_n} : {1'b0, shw_idx0_n};
-wire [8:0] sh_raddr = addr_r[1] ? {1'b1, sel_reg_b1} : {1'b0, sel_reg_b0};
+wire       sh_we    = shw_we_n;
+wire [8:0] sh_waddr = shw_idx_n;
+wire [8:0] sh_raddr = {sel_bank, sel_reg};
 always @(posedge clk_host) begin
     if (sh_we) shadow[sh_waddr] <= shw_dat_n;
     sh_q <= shadow[sh_raddr];           // era v3: lectura registrada (BSRAM)
 end
 
-// mux de lectura: status del core en C4/C6, registro shadow en C5/C7.
+// mux de lectura: status del core en C4/C6, registro shadow en C5/C7 (el del latch unico, sea cual sea el puerto).
 // _89: el status del YMF278B real mezcla los flags FM (timers, bits 5-7)
 // con los del wave (bit1=LD, bit0=BUSY) — se ORean los del motor PCM.
 wire [7:0] opl3_dout;

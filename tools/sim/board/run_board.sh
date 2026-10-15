@@ -129,9 +129,10 @@ comp neg_cst build/moontang_pins_agosto.v -Ptb_board.QUIET=1 -Ptb_board.STOP_AFT
 # ---- control negativo 2: captura original de la SDRAM (medio ciclo antes) ----
 comp neg_sdram build/moontang_pins.v -Ptb_board.QUIET=1 -Ptb_board.CAPTURE=0 -Ptb_board.STOP_AFTER=7
 # ---- control negativo 3: la escritura de las shadow FM ve el strobe ya caido en el flanco de bajada ----
-sed 's/shw_we\([01]\)_n <= wr_strobe && /shw_we\1_n <= wr_strobe \&\& prev_wr_active \&\& /' \
+# 15/10/2026: un solo strobe de dato (shw_we_n, latch unico de direccion FM)
+sed 's/shw_we_n <= wr_strobe && /shw_we_n <= wr_strobe \&\& prev_wr_active \&\& /' \
     build/moontang_sv2v.v > build/moontang_sv2v_negsh.v
-[ "$(grep -c 'wr_strobe && prev_wr_active' build/moontang_sv2v_negsh.v)" = 2 ] || { echo "control negativo 3: el parche no aplica"; exit 1; }
+[ "$(grep -c 'wr_strobe && prev_wr_active' build/moontang_sv2v_negsh.v)" = 1 ] || { echo "control negativo 3: el parche no aplica"; exit 1; }
 CORE=build/moontang_sv2v_negsh.v comp neg_shadow build/moontang_pins.v -Ptb_board.QUIET=1 -Ptb_board.STOP_AFTER=4
 # ---- flash en blanco: la suma de la YRW801 tiene que avisar (pantalla y LED) ----
 CORE=build/moontang_hdmi_sv2v.v comp blank build/moontang_hdmi_pins.v -Ptb_board.HDMI=1 -Ptb_board.BLANK=1 -Ptb_board.QUIET=1 -DWITH_HDMI_RX ../hdmi/hdmi_rx_check.v

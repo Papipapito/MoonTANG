@@ -844,7 +844,7 @@ module tb_board;
             io_wr_fast(16'h00C0, 8'hA0, m_tt, 2.2 * m_tt); io_wr_fast(16'h00C1, 8'h40 + m_i[7:0], m_tt, 2.2 * m_tt);
             ok(`YY.jt_din === 8'h40 + m_i[7:0] && `YY.jt_a0 === 1'b1, "  Y8950: el dato del OUT rapido llega a jtopl");
             io_wr_fast(16'h00C4, 8'h30 + m_i[7:0], m_tt, 2.2 * m_tt);
-            ok(fpga.u_top.u_wt.u_core.u_opl4fm.sel_reg_b0 === 8'h30 + m_i[7:0], "  OPL4: OUT rapido a C4h");
+            ok(fpga.u_top.u_wt.u_core.u_opl4fm.sel_reg === 8'h30 + m_i[7:0], "  OPL4: OUT rapido a C4h");
         end
         cnt_report("contadores de strobes = ciclos del banco tras el barrido de turbo (ni de mas ni de menos)");
 
@@ -857,7 +857,7 @@ module tb_board;
             io_wr_fast(16'h00C4, m_v, 279.365, m_w);
             #200;
             m_ok_y = (`YY.u_adpcm.reg_sel === m_v);
-            m_ok_o = (fpga.u_top.u_wt.u_core.u_opl4fm.sel_reg_b0 === m_v);
+            m_ok_o = (fpga.u_top.u_wt.u_core.u_opl4fm.sel_reg === m_v);
             if (m_ok_y) m_minw_y = m_w;
             if (m_ok_o) m_minw_o = m_w;
             $display("         /WR = %0d ns: Y8950 %0s, OPL4 %0s", m_w, m_ok_y ? "ok" : "PERDIDA", m_ok_o ? "ok" : "PERDIDA");
@@ -1111,11 +1111,12 @@ module tb_board;
         // (las tramas L y R se cargan con 10 us de diferencia: no tienen por que
         //  ser iguales; que el mono lleva LOS DOS canales se comprueba en la fase I)
         wv_w(8'h68, 8'h40);                         // KEY OFF + DAMP
-        // El motor no implementa DAMP: suelta a la tasa RR = 1. Desde 1.0.3beta la
-        // envolvente va a la velocidad del chip (antes cada paso se aplicaba dos
-        // veces) y la cola tarda ~2,2x mas en llegar a 0; con 6 ms el residuo PCM
-        // ya es 0 cuando llega la FM de la fase I (hrx_solo_l del banco HDMI).
-        #6_000_000; audio_clear; #400_000;
+        // Desde 1.0.4beta el motor implementa el DAMP como el chip (tasa 48 hasta
+        // -12 dB a los 5,8 ms y 63 por debajo: -96 dB a los 10,9 ms, sin mirar RR
+        // ni la correccion de tasa; en 1.0.3beta soltaba a la tasa RR y la cola
+        // tardaba ~6 ms). Con 12 ms el residuo PCM ya es 0 cuando llega la FM de
+        // la fase I (hrx_solo_l del banco HDMI exige R == 0 exacto).
+        #12_000_000; audio_clear; #400_000;
         ok(spk_max < 200 && spk_min > -200, "KEY OFF: silencio");
 
         // ==============================================================
