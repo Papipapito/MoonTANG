@@ -361,14 +361,16 @@ module moontang_core #(
     //     como shifts/sumas para no introducir un multiplicador en la
     //     GW2AR-18, que ya esta muy cerca de su limite de CLS.
     // ==================================================================
+    // F8: bits 2:0 atenuan el FM izquierdo y 5:3 el derecho (manual del YMF278B; el motor ya usa MIXFM[5:3] a la derecha).
+    // Hasta el 16/10/2026 la derecha usaba los bits del lado izquierdo: solo se notaba con un F8 asimetrico (1Bh es simetrico).
     wire signed [15:0] o4fm_sl = $signed(opl4fm_wav_l);
     wire signed [15:0] o4fm_sr = $signed(opl4fm_wav_r);
     wire signed [15:0] o4fm_bl = opl4_mixfm[0] ? (o4fm_sl >>> 1) + (o4fm_sl >>> 2) : o4fm_sl;
-    wire signed [15:0] o4fm_br = opl4_mixfm[0] ? (o4fm_sr >>> 1) + (o4fm_sr >>> 2) : o4fm_sr;
+    wire signed [15:0] o4fm_br = opl4_mixfm[3] ? (o4fm_sr >>> 1) + (o4fm_sr >>> 2) : o4fm_sr;
     wire signed [15:0] o4fm_al = o4fm_bl >>> opl4_mixfm[2:1];
-    wire signed [15:0] o4fm_ar = o4fm_br >>> opl4_mixfm[2:1];
+    wire signed [15:0] o4fm_ar = o4fm_br >>> opl4_mixfm[5:4];
     assign fm_l = (opl4_mixfm[2:0] == 3'd7) ? 16'sd0 : o4fm_al;
-    assign fm_r = (opl4_mixfm[2:0] == 3'd7) ? 16'sd0 : o4fm_ar;
+    assign fm_r = (opl4_mixfm[5:3] == 3'd7) ? 16'sd0 : o4fm_ar;
 
     function automatic signed [15:0] sat16(input signed [17:0] v);
         sat16 = (v >  18'sd32767) ? 16'sh7FFF :
