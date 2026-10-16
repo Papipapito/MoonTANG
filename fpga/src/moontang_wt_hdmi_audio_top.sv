@@ -1,5 +1,5 @@
 // ============================================================================
-// moontang_wt_hdmi_audio_top.sv — EXPERIMENTAL: MoonTANG + MSX-Audio (Y8950)
+// moontang_wt_hdmi_audio_top.sv — MoonTANG + MSX-Audio (Y8950)
 //                   CON HDMI. Tang Nano 20K (GW2AR-18C) sobre WonderTANG 2.0b / 2.02b
 //
 // Es moontang_wt_hdmi_top.sv con el Y8950 encendido (Y8950 = 1 en la carcasa):
@@ -10,13 +10,13 @@
 //
 // Mismos puertos y mismos nombres de instancia (u_wt, u_av) que
 // moontang_wt_hdmi_top.sv: usa sus restricciones (moontang_wt_hdmi.cst/.sdc).
-// Va lleno (CLS ~90 %, 9322/10368): es un experimento, no una variante de serie.
+// Va lleno (CLS 91 %, 9354/10368 en la 1.0.5): la variante con mas ocupacion.
 // ============================================================================
 
 `default_nettype none
 
 module moontang_wt_hdmi_audio_top #(
-    parameter [8*10-1:0] BUILD = "1.0.4beta ",
+    parameter [8*10-1:0] BUILD = "1.0.5     ",
     parameter AUDIO_MONO = 1,               // ver moontang_wt_shell
     parameter SDRAM_RD_CAPTURE_CLK = 1,     // ver moontang_core
     parameter VU_Y8950 = 1                  // 1 = barra MSX-AUDIO (mono) en el vumetro

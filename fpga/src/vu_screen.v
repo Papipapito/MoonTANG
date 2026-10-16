@@ -56,7 +56,7 @@
 //  `level` y `peak` solo cambian en el borrado vertical y se usan tal cual.
 //
 // ----------------------------------------------------------------------------
-//  Y8950 = 1 (solo la variante EXPERIMENTAL con MSX-Audio y HDMI)
+//  Y8950 = 1 (solo la variante con MSX-Audio y HDMI)
 // ----------------------------------------------------------------------------
 //  Una septima barra, MONO, entre WAVE y OUT, con el rotulo "MSX-AUDIO" en x1
 //  (en x2 no cabe antes de la barra). Para que quepa, las barras se juntan:

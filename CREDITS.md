@@ -30,7 +30,7 @@ intact.
 | I2S sample hand‑off | `fpga/src/i2s_feed.v` | Papipapito (Albert, with Claude) | GPL‑3.0 |
 | SPI flash reader | `fpga/src/flash_rw.v` | derived from `fpga/src/flash.v` of *WonderTANG* © 2023 **lfantoniosi**; write path (erase, page program, status polling with timeout) added by Papipapito (Albert, with Claude) | BSD‑2‑Clause (original notice kept in the header, see `THIRD_PARTY/NOTICE.md`); changes GPL‑3.0 |
 | YRW801 loader | `fpga/src/yrw801_loader.v` | Papipapito (Albert, with Claude) | GPL‑3.0 |
-| MoonSound core, board shells and tops | `fpga/src/moontang_core.sv`, `moontang_wt_shell.sv`, `moontang_top.sv`, `moontang_wt_audio_top.sv`, `moontang_wt_hdmi_top.sv`, `moontang_wt_hdmi_audio_top.sv` (experimental), `moontang_smd_top.sv`, `moontang_av.sv` | Papipapito (Albert, with Claude) | GPL‑3.0 |
+| MoonSound core, board shells and tops | `fpga/src/moontang_core.sv`, `moontang_wt_shell.sv`, `moontang_top.sv`, `moontang_wt_audio_top.sv`, `moontang_wt_hdmi_top.sv`, `moontang_wt_hdmi_audio_top.sv`, `moontang_smd_top.sv`, `moontang_av.sv` | Papipapito (Albert, with Claude) | GPL‑3.0 |
 | rPLL IP | `fpga/clocks/pll_main.v`, `pll_eng.v`, `pll_hdmi.v` | **Gowin Semiconductor** (tool IP, adapted) | vendor IP |
 
 ## Hardware / carrier

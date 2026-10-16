@@ -8,7 +8,7 @@
 #               sin HDMI, con el Y8950 en C0h-C1h): lo mismo que la principal y
 #               ademas la fase L del Y8950; y en paralelo la fase M (BUSV = 1:
 #               turbo, /WR cortos, ruido de bus, /INT en AND, /RESET a mitad)
-#   hdmi_audio  EXPERIMENTAL: la variante con HDMI y MSX-Audio (moontang_wt_hdmi_audio):
+#   hdmi_audio  la variante con HDMI y MSX-Audio (moontang_wt_hdmi_audio):
 #               todo lo del modo hdmi (receptor HDMI pixel a pixel y audio muestra a
 #               muestra), la fase L del Y8950 y la barra MSX-AUDIO del vumetro
 #               (fase V; deja el cuadro del cable en build/hdmi_audio_cuadro.png),
@@ -56,7 +56,7 @@ prep_hdmi_lock() { # HDMI con inyeccion de una perdida corta de lock_hdmi
     CORE=build/moontang_hdmi_sv2v.v comp hdmi_lock build/moontang_hdmi_pins.v -Ptb_board.HDMI=1 -DWITH_HDMI_RX -DTEST_HDMI_LOCK_GLITCH ../hdmi/hdmi_rx_check.v
 }
 
-prep_hdmi_audio() {   # EXPERIMENTAL: moontang_wt_hdmi_audio_top + moontang_wt_hdmi.cst + receptor
+prep_hdmi_audio() {   # moontang_wt_hdmi_audio_top + moontang_wt_hdmi.cst + receptor
     bash conv.sh build_wt_hdmi_audio.tcl "$PWD/build/moontang_hdmi_audio_sv2v.v"
     python3 ../gen_pin_wrapper.py $FPGA/src/moontang_wt_hdmi_audio_top.sv moontang_wt_hdmi_audio_top $FPGA/constraints/moontang_wt_hdmi.cst build/moontang_hdmi_audio_pins.v moontang_pins
     CORE=build/moontang_hdmi_audio_sv2v.v comp hdmi_audio build/moontang_hdmi_audio_pins.v -Ptb_board.HDMI=1 -DWITH_HDMI_RX -DWITH_Y8950 -DWITH_VU_Y8950 ../hdmi/hdmi_rx_check.v
@@ -72,7 +72,7 @@ if [ "$MODO" = "hdmi_audio" ]; then
     CORE=build/moontang_hdmi_audio_sv2v_negvu.v comp neg_vu build/moontang_hdmi_audio_pins.v -Ptb_board.HDMI=1 -Ptb_board.QUIET=1 -DWITH_HDMI_RX -DWITH_Y8950 -DWITH_VU_Y8950 ../hdmi/hdmi_rx_check.v
     rm -f build/hdmi_audio_cuadro.ppm build/hdmi_audio_cuadro.png
     run hdmi_audio & run neg_vu & wait
-    echo "################ EXPERIMENTAL: con HDMI y MSX-Audio ################"
+    echo "################ con HDMI y MSX-Audio ################"
     cat build/hdmi_audio.log
     [ -f build/hdmi_audio_cuadro.ppm ] && python3 ../hdmi/ppm2png.py build/hdmi_audio_cuadro.ppm build/hdmi_audio_cuadro.png
     echo

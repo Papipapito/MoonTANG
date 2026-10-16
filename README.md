@@ -1,49 +1,50 @@
 # MoonTANG 🌙
 
-![MoonTANG 1.0.4 beta — overview](docs/img/moontang-1.0beta-overview.png)
+![MoonTANG — overview](docs/img/moontang-overview.png)
 
-> **Español.** MoonTANG es un cartucho MoonSound / MSX-Audio experimental para
+> **Español.** MoonTANG es un cartucho MoonSound / MSX-Audio para
 > MSX basado en una Tang Nano 20K. Añade OPL4, muestras PCM, HDMI opcional y,
 > según la versión, MSX-Audio.
 >
-> **English.** MoonTANG is an experimental MoonSound / MSX-Audio cartridge for
+> **English.** MoonTANG is a MoonSound / MSX-Audio cartridge for
 > MSX based on a Tang Nano 20K. It adds OPL4, PCM samples, optional HDMI and,
 > depending on the build, MSX-Audio.
 
-## ⚠️ BETA — use at your own risk / úsalo bajo tu responsabilidad
+## ⚠️ Use at your own risk / úsalo bajo tu responsabilidad
 
-> **Español — aviso importante.** MoonTANG es hardware y firmware **beta y
-> experimental**. Puede contener errores, producir comportamientos inesperados o
+> **Español — aviso importante.** MoonTANG es hardware y firmware de
+> aficionado, sin garantía. Puede contener errores, producir comportamientos inesperados o
 > no funcionar con tu equipo. Al cargar un bitstream o conectar el cartucho,
 > aceptas el riesgo: los autores y colaboradores no se responsabilizan de daños,
 > pérdidas de datos ni averías en el MSX, la WonderTANG, la Tang Nano, la fuente
 > de alimentación o cualquier otro equipo. Prueba primero en SRAM, con el MSX
 > apagado al conectar, y verifica siempre la alimentación y J3.
 >
-> **English — important notice.** MoonTANG is **beta, experimental** hardware
-> and firmware. It may contain bugs, behave unexpectedly or fail to work with
+> **English — important notice.** MoonTANG is hobbyist hardware and firmware
+> with no warranty. It may contain bugs, behave unexpectedly or fail to work with
 > your equipment. By loading a bitstream or connecting the cartridge, you accept
 > the risk: the authors and contributors accept no liability for damage, data
 > loss or failure affecting the MSX, WonderTANG, Tang Nano, power supply or any
 > other equipment. Test in SRAM first, connect it with the MSX powered off, and
 > verify power and J3 before use.
 
-## 1.0.4 beta: three WonderTANG versions / tres versiones WonderTANG
+## 1.0.5: three WonderTANG versions / tres versiones WonderTANG
 
 All three builds are for the **WonderTANG 2.02b only**.
 
 | Bitstream | English | Español |
 |---|---|---|
-| [`moontang_wondertang202b_hdmi_1.0.4beta.fs`](bitstream/moontang_wondertang202b_hdmi_1.0.4beta.fs) | **OPL4 + HDMI.** MoonSound, stereo HDMI audio/video and mono sound into the MSX through `SOUNDIN`. Use this when you already own a real MSX-Audio. | **OPL4 + HDMI.** MoonSound, vídeo y audio HDMI estéreo y sonido mono hacia el MSX por `SOUNDIN`. Úsala si ya tienes un MSX-Audio real. |
-| [`moontang_wondertang202b_hdmi_msxaudio_1.0.4beta.fs`](bitstream/moontang_wondertang202b_hdmi_msxaudio_1.0.4beta.fs) | **OPL4 + MSX-Audio + HDMI.** Everything together: MoonSound, Y8950 MSX-Audio and HDMI. It is the largest build (91 % CLS); test it in SRAM first. | **OPL4 + MSX-Audio + HDMI.** Todo junto: MoonSound, MSX-Audio Y8950 y HDMI. Es la versión más grande (91 % CLS); pruébala primero en SRAM. |
-| [`moontang_wondertang202b_msxaudio_1.0.4beta.fs`](bitstream/moontang_wondertang202b_msxaudio_1.0.4beta.fs) | **OPL4 + MSX-Audio, no HDMI.** MoonSound plus Y8950 MSX-Audio, with sound through the MSX. | **OPL4 + MSX-Audio, sin HDMI.** MoonSound más MSX-Audio Y8950, con sonido por el propio MSX. |
+| [`moontang_wondertang202b_hdmi_1.0.5.fs`](bitstream/moontang_wondertang202b_hdmi_1.0.5.fs) | **OPL4 + HDMI.** MoonSound, stereo HDMI audio/video and mono sound into the MSX through `SOUNDIN`. Use this when you already own a real MSX-Audio. | **OPL4 + HDMI.** MoonSound, vídeo y audio HDMI estéreo y sonido mono hacia el MSX por `SOUNDIN`. Úsala si ya tienes un MSX-Audio real. |
+| [`moontang_wondertang202b_hdmi_msxaudio_1.0.5.fs`](bitstream/moontang_wondertang202b_hdmi_msxaudio_1.0.5.fs) | **OPL4 + MSX-Audio + HDMI.** Everything together: MoonSound, Y8950 MSX-Audio and HDMI. It is the largest build (91 % CLS); test it in SRAM first. | **OPL4 + MSX-Audio + HDMI.** Todo junto: MoonSound, MSX-Audio Y8950 y HDMI. Es la versión más grande (91 % CLS); pruébala primero en SRAM. |
+| [`moontang_wondertang202b_msxaudio_1.0.5.fs`](bitstream/moontang_wondertang202b_msxaudio_1.0.5.fs) | **OPL4 + MSX-Audio, no HDMI.** MoonSound plus Y8950 MSX-Audio, with sound through the MSX. | **OPL4 + MSX-Audio, sin HDMI.** MoonSound más MSX-Audio Y8950, con sonido por el propio MSX. |
 
 ### Releases
 
 | Release | What it brings |
 |---|---|
-| **1.0.4beta** | The OPL4 wave engine implements DAMP and pseudo-reverb like the chip (note cuts in MoonBlaster Wave stop in 11 ms, reverb tails decay at the right rate); the 2.7 s burst of noise when loading songs in the *Dutch Moonsound Veterans HDD* demo is gone (an idle voice with TL=7Fh and tremolo wrapped to full scale; it affected 1.0.2beta and 1.0.3beta); register reads through `7Fh` no longer disturb the other voices; the LFO reset acts on its own voice; DL steps are 3 dB; NEW2 can be switched off; the memory access mode is silent as on the chip; the FM read-back follows the single address latch. |
-| 1.0.3beta | The OPL4 wave engine follows the chip: headroom for the 24 voices (dense music used to clip and wrap around), TL fades with `LD=0` reach their target without buzzing, envelope rates and attack as on the YMF278B (a note at a low rate in a low octave no longer dies in a few milliseconds), panning in −3 dB steps (it was −12 dB) and silence below −60 dB. The wave level per voice is unchanged. |
+| **1.0.5** | The OPL4 wave envelope stops at −60 dB like the chip: reverb tails and fades fall silent where the YMF278B does, 30 dB earlier than before, and idle voices stop reading the wave memory from there. `DL=0` goes straight to the second decay. The wave LFO runs at the chip's exact rates (speed 7 was 2.5 % slow) and a speed change applies at once (before, up to 23 ms later). `F8h` sets the right FM side with its own bits (5:3; it used the left side's). |
+| 1.0.4beta | The OPL4 wave engine implements DAMP and pseudo-reverb like the chip (note cuts in MoonBlaster Wave stop in 11 ms, reverb tails decay at the right rate); the 2.7 s burst of noise when loading songs in the *Dutch Moonsound Veterans HDD* demo is gone (an idle voice with TL=7Fh and tremolo wrapped to full scale; it affected 1.0.2beta and 1.0.3beta); register reads through `7Fh` no longer disturb the other voices; the LFO reset acts on its own voice; DL steps are 3 dB; NEW2 can be switched off; the memory access mode is silent as on the chip; the FM read-back follows the single address latch. |
+| 1.0.3beta | The OPL4 wave engine follows the chip: headroom for the 24 voices (dense music used to clip and wrap around), TL fades with `LD=0` reach their target without buzzing, envelope rates and attack as on the YMF278B (a note at a low rate in a low octave no longer dies in a few milliseconds), panning in −3 dB steps (it was −12 dB) and true silence below −90 dB (idle voices used to leave a small DC offset). The wave level per voice is unchanged. |
 | 1.0.2beta | The OPL4 takes NEW2 with the data on `C5h` as well as on `C7h`, as the chip does (`C7h` mirrors `C5h`): the disks that use the Moonsoft MoonBlaster Wave BASIC driver (Moonsound Music Collection 1, Musix Dizk 3) were silent. `F8h` resets to `1Bh` like the chip (FM at −9 dB per side; it used to start at `00h`). FM vibrato and tremolo as on the YMF262 (vibrato 6.05 Hz, ±12 cents; tremolo 4.9 dB at 3.7 Hz; before, a 217 Hz wobble and no tremolo). `MTVOL.COM` 1.0.2. |
 | 1.0.1beta | Wavetable 2.87 dB lower (fixed −8.87 dB trim) so PCM instruments no longer sit above the FM; `MTVOL.COM`, to set the OPL4 FM and Wave levels from MSX-DOS. |
 | 1.0beta | The three WonderTANG 2.02b bitstreams; the HDMI output recovers from a PLL lock loss. |
@@ -63,7 +64,7 @@ All three builds are for the **WonderTANG 2.02b only**.
 
 ---
 
-**An experimental MoonSound (OPL4 / YMF278B) cartridge for MSX on a
+**A MoonSound (OPL4 / YMF278B) cartridge for MSX on a
 [Sipeed Tang Nano 20K](https://wiki.sipeed.com/hardware/en/tang/tang-nano-20k/nano-20k.html)
 (Gowin GW2AR‑18).**
 
@@ -79,17 +80,20 @@ MoonSound.
 nothing else.** No megaROM, no RAM expansion, no Nextor. If you want those, use
 [tnCart](https://github.com/buppu3/tnCart) — this project borrows its bus front‑end.
 
-## ⚠️ Experimental / experimental
+## Hardware testing / pruebas en placa
 
-**Español.** La versión HDMI normal funcionó diez minutos continuos de música
-en una WonderTANG 2.02b después de la corrección de recuperación del PLL. Las
-otras combinaciones han pasado simulación y compilación, pero siguen necesitando
-pruebas en hardware. Si pruebas una, abre una incidencia con el resultado.
+**Español.** MoonTANG ha sonado en una WonderTANG 2.02b, en el slot interno de
+un MSXBOOK; la última vez, con la 1.0.4beta. La 1.0.5 es la 1.0.4beta con el
+motor wave de la Z1.2.10 de la MSXimus Z (probado en placa en la MSXimus Z) y el
+arreglo del lado derecho del `F8h`. Sus tres imágenes pasan la simulación de la placa completa y
+compilan sin violaciones de tiempo. Si pruebas una, abre una incidencia con el
+resultado, bueno o malo.
 
-**English.** The plain HDMI build played ten continuous minutes of music on a
-WonderTANG 2.02b after the PLL-recovery fix. The other combinations pass
-simulation and implementation, but still need hardware testing. Please open an
-issue with results, good or bad.
+**English.** MoonTANG has played on a WonderTANG 2.02b, in the internal slot of
+an MSXBOOK; most recently, 1.0.4beta. 1.0.5 is 1.0.4beta with the wave engine of
+the MSXimus Z Z1.2.10 (tested on hardware in the MSXimus Z) and the fix to the
+right side of `F8h`. Its three bitstreams pass the whole-board simulation and build without
+timing violations. Please open an issue with your results, good or bad.
 
 ## Compatible hardware / hardware compatible
 
@@ -127,7 +131,7 @@ cd fpga
 gw_sh build_wt_audio.tcl  # WonderTANG + MSX-Audio, without HDMI -> impl/pnr/moontang_wt_audio.fs
 gw_sh build.tcl           # WonderTANG without HDMI   -> impl/pnr/moontang_wt.fs
 gw_sh build_wt_hdmi.tcl   # WonderTANG with HDMI      -> impl/pnr/moontang_wt_hdmi.fs
-gw_sh build_wt_hdmi_audio.tcl  # EXPERIMENTAL: WonderTANG with HDMI and MSX-Audio (see docs/WONDERTANG.md)
+gw_sh build_wt_hdmi_audio.tcl  # WonderTANG with HDMI and MSX-Audio, the fullest build (see docs/WONDERTANG.md)
 ```
 
 ## Simulation
@@ -139,7 +143,8 @@ timing drives it, with models of the SPI flash and of the embedded SDRAM.
 
 ```sh
 # WSL / Linux with Icarus Verilog and sv2v
-bash tools/sim/board/run_board.sh todo     # WonderTANG: the three bitstreams + negative controls
+bash tools/sim/board/run_board.sh todo        # without HDMI, with HDMI and with MSX-Audio, + negative controls
+bash tools/sim/board/run_board.sh hdmi_audio  # the HDMI + MSX-Audio bitstream (about an hour)
 ```
 
 See [`docs/VERIFICATION.md`](docs/VERIFICATION.md) for what is and is not covered.

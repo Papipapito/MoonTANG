@@ -21,7 +21,7 @@
 // banco comprueba ademas el MSX-Audio (fase L); con -Ptb_board.BUSV=1 hace en
 // su lugar la fase M (bus, turbo, IRQ y /RESET del Y8950) tras la fase D.
 // Con -DWITH_Y8950 -DWITH_HDMI_RX -DWITH_VU_Y8950 y HDMI = 1 (run_board.sh
-// hdmi_audio) el top es el EXPERIMENTAL moontang_wt_hdmi_audio_top: las
+// hdmi_audio) el top es moontang_wt_hdmi_audio_top: las
 // comprobaciones de las dos y ademas la barra MSX-AUDIO del vumetro (fase V).
 // ============================================================================
 `timescale 1ns/1ps
@@ -472,7 +472,7 @@ module tb_board;
 
 `ifdef WITH_VU_Y8950
     // ------------------------------------------------------------------
-    //  Barra MSX-AUDIO del vumetro (variante EXPERIMENTAL wt_hdmi_audio,
+    //  Barra MSX-AUDIO del vumetro (variante wt_hdmi_audio,
     //  -DWITH_VU_Y8950, con -DWITH_Y8950 y -DWITH_HDMI_RX). Modelo propio de
     //  la barra, independiente de vu_screen: en sus 24 filas (y = 248..271) y
     //  en los 16 px de cada uno de sus 28 segmentos (x = 168 + 18 (k-1) + 0..15)
@@ -1111,11 +1111,11 @@ module tb_board;
         // (las tramas L y R se cargan con 10 us de diferencia: no tienen por que
         //  ser iguales; que el mono lleva LOS DOS canales se comprueba en la fase I)
         wv_w(8'h68, 8'h40);                         // KEY OFF + DAMP
-        // Desde 1.0.4beta el motor implementa el DAMP como el chip (tasa 48 hasta
-        // -12 dB a los 5,8 ms y 63 por debajo: -96 dB a los 10,9 ms, sin mirar RR
-        // ni la correccion de tasa; en 1.0.3beta soltaba a la tasa RR y la cola
-        // tardaba ~6 ms). Con 12 ms el residuo PCM ya es 0 cuando llega la FM de
-        // la fase I (hrx_solo_l del banco HDMI exige R == 0 exacto).
+        // Con DAMP la tasa es 48 hasta -12 dB (5,8 ms) y 63 por debajo, sin mirar
+        // RR ni la correccion de tasa (desde 1.0.4beta). Desde 1.0.5 la envolvente
+        // se para en -60 dB (280h), a los ~8,7 ms, y el slot calla desde ahi. Con
+        // 12 ms el residuo PCM ya es 0 cuando llega la FM de la fase I (hrx_solo_l
+        // del banco HDMI exige R == 0 exacto).
         #12_000_000; audio_clear; #400_000;
         ok(spk_max < 200 && spk_min > -200, "KEY OFF: silencio");
 

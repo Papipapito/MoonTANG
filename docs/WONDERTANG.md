@@ -1,9 +1,9 @@
 # MoonTANG on the WonderTANG 2.02b
 
-The OPL4 has played on a WonderTANG 2.02b with an earlier build of the HDMI
-bitstream (the one of the morning of 5 October, before the latest fixes). The
-bitstreams in `bitstream/` — the MSX‑Audio one included — have not been run on
-hardware yet. This is the bring‑up guide.
+MoonTANG has played on a WonderTANG 2.02b, most recently 1.0.4beta. The 1.0.5
+bitstreams in `bitstream/` pass the whole‑board simulation and build without
+timing violations; their OPL4 wave engine is the one of the MSXimus Z Z1.2.10,
+tested on hardware in the MSXimus Z. This is the bring‑up guide.
 
 ## What you need
 
@@ -23,9 +23,9 @@ hardware yet. This is the bring‑up guide.
 
 | Bitstream | What it does |
 |---|---|
-| `bitstream/moontang_wondertang202b_msxaudio_1.0.4beta.fs` | MoonSound **and MSX‑Audio**, without HDMI. Sound to the MSX only. |
-| `bitstream/moontang_wondertang202b_hdmi_1.0.4beta.fs` | MoonSound with HDMI: sound to the MSX **and**, at the same time, stereo sound and a VU meter on the Tang's HDMI connector. |
-| `bitstream/moontang_wondertang202b_hdmi_msxaudio_1.0.4beta.fs` | MoonSound, MSX‑Audio **and** HDMI together. This is the high-occupancy beta build. |
+| `bitstream/moontang_wondertang202b_msxaudio_1.0.5.fs` | MoonSound **and MSX‑Audio**, without HDMI. Sound to the MSX only. |
+| `bitstream/moontang_wondertang202b_hdmi_1.0.5.fs` | MoonSound with HDMI: sound to the MSX **and**, at the same time, stereo sound and a VU meter on the Tang's HDMI connector. |
+| `bitstream/moontang_wondertang202b_hdmi_msxaudio_1.0.5.fs` | MoonSound, MSX‑Audio **and** HDMI together. It is the fullest build (91 % of the CLS). |
 
 Which one:
 
@@ -34,7 +34,7 @@ Which one:
 - **OPL4 + HDMI** — if a real MSX‑Audio (Philips Music Module, Panasonic FS‑CA1,
   Toshiba HX‑MU900) is already plugged into another slot. The HDMI screen also
   shows that the wave ROM, MSX clock and audio path are alive.
-- **MSX‑Audio + HDMI** — the all-in-one beta build. It offers both chips and HDMI,
+- **MSX‑Audio + HDMI** — the all-in-one build. It offers both chips and HDMI,
   but uses 91 % of the FPGA CLS; load it in SRAM first.
 
 For a first try you can load the `.fs` into **SRAM** instead (it is lost at power
@@ -172,23 +172,23 @@ still available as a parameter (`SDRAM_RD_CAPTURE_CLK = 0` in the top of each
 bitstream: `moontang_top.sv`, `moontang_wt_audio_top.sv`, `moontang_wt_hdmi_top.sv`)
 in case a board prefers it.
 
-## Experimental: HDMI and MSX‑Audio together
+## HDMI and MSX-Audio together
 
-`fpga/files/20261005/moontang_wondertang202b_hdmi_msxaudio_EXPERIMENTAL_20261005.fs`
-(built with `fpga/build_wt_hdmi_audio.tcl`; deliberately not in `bitstream/`) is the
+`bitstream/moontang_wondertang202b_hdmi_msxaudio_1.0.5.fs` (built with
+`fpga/build_wt_hdmi_audio.tcl`) is the
 HDMI bitstream with the Y8950 of the MSX‑Audio bitstream switched on: everything both
 of them do, at the same time. The VU meter gets a seventh bar, **MSX‑AUDIO** (mono:
 what the Y8950 adds to the mix), between WAVE and OUT. It is flashed like the others
 (the `.fs` at `0x000000`, the YRW801 at `0x200000`).
 
-It fills the chip: 70 % of the logic and 91 % of the CLS (the HDMI bitstream: 56 %
+It fills the chip: 69 % of the logic and 91 % of the CLS (the HDMI bitstream: 56 %
 and 77 %). Gowin closes timing on every build tried: 0 setup and 0 hold violations
 in 6 builds — 4 different placements, two of them routed twice, and two of the
 placements with the design slightly perturbed — with at least 1.2 ns of setup
-margin (hold: at least 0.074 ns, on BSRAM data inputs). This
-one has 2.75 ns of setup margin on the 108 MHz clock. The board bench passes on it
-(`run_board.sh hdmi_audio`, see [VERIFICATION.md](VERIFICATION.md)). It has **not
-been tried on hardware**, and there is one risk timing analysis cannot see: the
+margin (hold: at least 0.074 ns, on BSRAM data inputs). The 1.0.5
+bitstream has 2.46 ns of setup margin on the 108 MHz clock. The board bench passes on it
+(`run_board.sh hdmi_audio`, see [VERIFICATION.md](VERIFICATION.md)). There is one risk
+timing analysis cannot see: the
 interface with the Tang Nano 20K's embedded SDRAM (`O_sdram_*`, `IO_sdram_dq`) is
 not constrained in the `.sdc` of any MoonTANG bitstream, so "timing met" says
 nothing about it; how much margin it has depends on where the registers that drive

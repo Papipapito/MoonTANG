@@ -1,5 +1,5 @@
 # ============================================================================
-#  build_wt_hdmi_audio.tcl — EXPERIMENTAL: MoonTANG (OPL4/MoonSound) + MSX-Audio
+#  build_wt_hdmi_audio.tcl — MoonTANG (OPL4/MoonSound) + MSX-Audio
 #              (Y8950) CON HDMI. Tang Nano 20K · GW2AR-LV18QN88C8/I7
 #              WonderTANG 2.0b / 2.02b (sonido al MSX y, a la vez, HDMI + vumetro)
 #  Uso: cd fpga && gw_sh build_wt_hdmi_audio.tcl -> impl/pnr/moontang_wt_hdmi_audio.fs

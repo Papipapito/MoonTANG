@@ -5,10 +5,9 @@ not cover, so a failure on hardware can be narrowed down quickly.
 
 ## On hardware
 
-The OPL4 has played on a WonderTANG 2.02b with an earlier build of the HDMI
-bitstream (the morning of 5 October, before the latest fixes). Not tried on
-hardware yet: the MSX‑Audio builds and the HDMI + MSX‑Audio build. The MSX‑BASIC
-tests of [`tools/msx/`](../tools/msx/)
+MoonTANG has played on a WonderTANG 2.02b, most recently 1.0.4beta. The 1.0.5
+wave engine is, byte for byte, the one of the MSXimus Z Z1.2.10, tested on
+hardware in the MSXimus Z. The MSX‑BASIC tests of [`tools/msx/`](../tools/msx/)
 were checked against openMSX.
 
 ## The board‑level benches
@@ -34,7 +33,7 @@ bash tools/sim/board/run_board.sh          # WonderTANG without HDMI (about 6 mi
 bash tools/sim/board/run_board.sh hdmi     # with HDMI, and the HDMI receiver model (about 20 minutes)
 bash tools/sim/board/run_board.sh audio    # with the MSX-Audio: phases L and M
 bash tools/sim/board/run_board.sh todo     # all three, negative controls, blank flash, sweeps
-bash tools/sim/board/run_board.sh hdmi_audio  # the EXPERIMENTAL HDMI + MSX-Audio bitstream and its negative control (about 60 minutes; not in "todo")
+bash tools/sim/board/run_board.sh hdmi_audio  # the HDMI + MSX-Audio bitstream and its negative control (about 60 minutes; not in "todo")
 ```
 
 ### Where the pin numbers come from
@@ -47,7 +46,7 @@ from different sources:
 |---|---|---|
 | WonderTANG | wrapper generated from `fpga/constraints/moontang.cst` | pin table generated from the official firmware's `top.cst`; bus multiplexing as the official `top.v` does it |
 
-### What the WonderTANG bench checks (75 checks; 84 with HDMI; 120 with the MSX‑Audio)
+### What the WonderTANG bench checks (77 checks; 87 with HDMI; 122 with the MSX‑Audio)
 
 The same bench runs the three WonderTANG bitstreams. With HDMI it also checks the
 38.57 MHz engine clock and, with the HDMI receiver model described below, that
@@ -72,7 +71,7 @@ data bus during one of its own reads.
 
 `bash tools/sim/board/run_board.sh audio` builds the MSX‑Audio top against the same
 `moontang.cst` and runs two simulations side by side: the main bench with phase L
-added (120 checks), and phase M (`-Ptb_board.BUSV=1`, 84 checks), which after the
+added (122 checks), and phase M (`-Ptb_board.BUSV=1`, 84 checks), which after the
 port checks replaces the rest of the main bench. `run_board.sh todo` runs both.
 
 Phase L:
@@ -149,11 +148,11 @@ inputs and has to fail (the first five in `run_board.sh todo`, the sixth in
 | Control | Result |
 |---|---|
 | The pin file of the first bitstream (address selectors swapped) | fails 8 of 36 checks: no answer at `C4h`, and an answer when `C4h` is on A8–A15 |
-| The original SDRAM read‑capture point, against the worst‑case data window | fails 13 of 56: wave memory reads return undefined data |
+| The original SDRAM read‑capture point, against the worst‑case data window | fails 14 of 58: wave memory reads return undefined data |
 | FM shadow‑register writes that miss their strobe (the read‑back copy is never written) | fails 4 of 36: `C5h` and `C7h` do not read back what was written |
-| The PCM engine before the reset fix (memory‑chain completion seen right after an MSX reset) | fails 2 of 75: 5 of 192 reads of the wave ROM's first bytes wrong after the reset |
-| The Y8950 FM given the whole bus cycle, as `jtopl` gets it in the MSXimus (`cs_n` for as long as the write is seen, with the live data and A0 instead of the 2‑cycle pulse with the first cycle's), MSX‑Audio bitstream | fails 1 of 120, phase L4b: `jtopl` keeps `FFh` (the released bus) as the index or as the data in 16 of the 105 phases. Whether the FM note of phase L4 sounds depends on the phases its writes land on: in an earlier version of the bench it did not sound, now it does |
-| The seventh VU bar fed with the mix (OUT R) instead of the Y8950's share, experimental HDMI + MSX‑Audio bitstream (`run_board.sh hdmi_audio`) | fails 1 of 133: the bar moves while only the OPL4 plays |
+| The PCM engine before the reset fix (memory‑chain completion seen right after an MSX reset) | fails 2 of 77: 13 of 192 reads of the wave ROM's first bytes wrong after the reset |
+| The Y8950 FM given the whole bus cycle, as `jtopl` gets it in the MSXimus (`cs_n` for as long as the write is seen, with the live data and A0 instead of the 2‑cycle pulse with the first cycle's), MSX‑Audio bitstream | fails 1 of 122, phase L4b: `jtopl` keeps `FFh` (the released bus) as the index or as the data in 16 of the 105 phases. Whether the FM note of phase L4 sounds depends on the phases its writes land on: in an earlier version of the bench it did not sound, now it does |
+| The seventh VU bar fed with the mix (OUT R) instead of the Y8950's share, HDMI + MSX‑Audio bitstream (`run_board.sh hdmi_audio`) | fails 1 of 136: the bar moves while only the OPL4 plays |
 
 And one case that has to be reported, not passed: a **blank flash** where the
 wave ROM should be. The copy finishes, but the checksum does not match, and the
@@ -176,7 +175,7 @@ fixed phase with the MSX clock, and the release goes through an NPN and the MSX
 pull‑up, whose delay depends on the computer. The Z80 then takes one wait state
 more or one less. The bench follows the shorter path and checks the data there; the
 longer path only adds time. In the current runs the releases that land inside the
-window are all on reads of `7Fh`: 19 without HDMI, 22 with the MSX‑Audio, none
+window are all on reads of `7Fh`: 25 without HDMI, 23 with the MSX‑Audio, none
 with HDMI.
 
 ### What the HDMI‑board bench checks
@@ -201,11 +200,11 @@ is allowed ±2: in simulation the pixel and audio clocks come from models rounde
 to picoseconds and give 27001.7; on the board both come from the same crystal and
 it is exactly 27000.
 
-### The experimental HDMI + MSX‑Audio bitstream
+### The HDMI + MSX‑Audio bitstream
 
 `run_board.sh hdmi_audio` builds `moontang_wt_hdmi_audio_top` (the HDMI top with the
 Y8950 on) against `moontang_wt_hdmi.cst` and runs, in one simulation, everything of
-the HDMI bench and phase L of the MSX‑Audio bench (133 checks): every pixel and
+the HDMI bench and phase L of the MSX‑Audio bench (136 checks): every pixel and
 every audio sample on the cable, the Y8950 FM and ADPCM in the mix, the shared
 `/INT`. Phase M (bus timing) is not repeated: the bus front‑end and the Y8950
 interface are the ones of the MSX‑Audio bitstream. Plus phase V, the seventh bar of
@@ -219,7 +218,7 @@ reaches 26 with the Y8950 FM note of phase L4. The frame on the cable is left in
 Its negative control (the bar fed with the mix) runs alongside, in the same mode;
 see the table above.
 
-Gowin closes timing on it, but see [WONDERTANG.md](WONDERTANG.md#experimental-hdmi-and-msx-audio-together)
+Gowin closes timing on it, but see [WONDERTANG.md](WONDERTANG.md#hdmi-and-msx-audio-together)
 for the one risk that timing analysis does not cover (the embedded SDRAM interface
 is not constrained).
 

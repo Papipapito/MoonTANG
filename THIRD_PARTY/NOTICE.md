@@ -118,7 +118,7 @@ data buffer around follows his Asgard `slave_bus.v`. No code of his is included.
 
 ## 10. JTOPL and the JT12 ADPCM‑B decoder — GPL‑3.0‑or‑later
 
-Only in the MSX‑Audio bitstreams (`build_wt_audio.tcl` and the experimental
+Only in the MSX‑Audio bitstreams (`build_wt_audio.tcl` and
 `build_wt_hdmi_audio.tcl`).
 
 - `fpga/y8950/jtopl/*.v` © **Jose Tejada Gomez** (`jotego`), from

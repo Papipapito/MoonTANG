@@ -41,7 +41,7 @@ The design is one **core** — the MoonSound itself — inside the WonderTANG sh
 | `src/moontang_wt_hdmi_top.sv` | WonderTANG top **with** HDMI: shell + `moontang_av` |
 | `src/moontang_top.sv` | WonderTANG top **without** HDMI: shell + a PLL for the PCM engine |
 | `src/moontang_wt_audio_top.sv` | WonderTANG top **without** HDMI and **with** the MSX‑Audio: `moontang_top.sv` with `Y8950 = 1`; same ports and instance names, so it uses the same `moontang.cst` and `moontang.sdc` |
-| `src/moontang_wt_hdmi_audio_top.sv` | **experimental**: WonderTANG top **with** HDMI **and** the MSX‑Audio: `moontang_wt_hdmi_top.sv` with `Y8950 = 1` and the seventh VU bar; same ports and instance names, so it uses `moontang_wt_hdmi.cst` and `.sdc` |
+| `src/moontang_wt_hdmi_audio_top.sv` | WonderTANG top **with** HDMI **and** the MSX‑Audio: `moontang_wt_hdmi_top.sv` with `Y8950 = 1` and the seventh VU bar; same ports and instance names, so it uses `moontang_wt_hdmi.cst` and `.sdc` |
 | `src/moontang_y8950.sv` | the MSX‑Audio: bus decoding of `C0h–C1h`, write strobes, 3.58 MHz clock enable, IRQ; instantiates the parts below |
 | `y8950/jtopl/*`, `y8950/jt10/*`, `y8950/y8950_adpcm.v`, `y8950/adpcm_sdram.v` | Y8950 FM (`jtopl2`), ADPCM‑B decoder, ADPCM registers and sample RAM interface |
 | `src/moontang_mix_y8950.v` | mixer of the MSX‑Audio bitstream: OPL4 + Y8950 and the limiter |
@@ -86,7 +86,7 @@ engine takes its clock from there instead of having a PLL of its own. That is th
 only internal difference between the WonderTANG bitstreams with and without HDMI.
 
 The MSX‑Audio bitstream has the clocks of the one without HDMI, and the
-experimental HDMI + MSX‑Audio one those of the HDMI bitstream. The Y8950 runs on
+HDMI + MSX‑Audio one those of the HDMI bitstream. The Y8950 runs on
 the 54 MHz clock with a clock enable of 35/528, 3.579545 MHz on average (315/88 MHz,
 the MSX clock); it adds no clock net.
 
@@ -208,7 +208,7 @@ the bars and the texts directly from the pixel coordinates — there is no frame
 buffer. The values only change during vertical blanking.
 
 With `Y8950 = 1` (a parameter of `moontang_av` and `vu_screen`, set only by the
-experimental HDMI + MSX‑Audio top) there is a seventh, mono bar, **MSX‑AUDIO**,
+HDMI + MSX‑Audio top) there is a seventh, mono bar, **MSX‑AUDIO**,
 between WAVE and OUT: the Y8950's term as it enters the mix, `(FM + ADPCM/8) × 5`
 (`out_y` of `moontang_mix_y8950`), saturated to 16 bits. The other bars move closer
 together to make room. With the default `Y8950 = 0` the screen and the logic are
@@ -266,28 +266,28 @@ Cost, Gowin 1.9.12.03, WonderTANG without HDMI:
 
 | | Without MSX‑Audio | With MSX‑Audio |
 |---|---|---|
-| Logic | 8 717 (43 %) | 11 192 (54 %) |
-| CLS | 6 244 (61 %) | 8 385 (81 %) |
-| Registers | 4 823 | 7 512 |
+| Logic | 8 745 (43 %) | 11 317 (55 %) |
+| CLS | 6 227 (61 %) | 8 408 (82 %) |
+| Registers | 4 825 | 7 522 |
 | BSRAM | 15 / 46 | 17 / 46 |
 | DSP | 1.5 | 3.5 |
 | Global clock nets (PRIMARY) | 8 / 8 | 8 / 8, the same ones |
-| Setup slack at 108 / 54 MHz | 3.17 / 8.31 ns | 2.29 / 7.29 ns |
+| Setup slack at 108 / 54 MHz | 1.72 / 7.26 ns | 1.61 / 6.48 ns |
 | Setup / hold violations | 0 / 0 | 0 / 0 |
 
-The experimental WonderTANG bitstream with HDMI **and** the MSX‑Audio, against the
+The WonderTANG bitstream with HDMI **and** the MSX‑Audio, against the
 HDMI one:
 
-| | HDMI | HDMI + MSX‑Audio (experimental) |
+| | HDMI | HDMI + MSX‑Audio |
 |---|---|---|
-| Logic | 11 518 (56 %) | 14 315 (70 %) |
-| CLS | 7 919 (77 %) | 9 419 (91 %) |
-| Registers | 5 918 | 8 720 |
+| Logic | 11 562 (56 %) | 14 305 (69 %) |
+| CLS | 7 942 (77 %) | 9 354 (91 %) |
+| Registers | 5 928 | 8 722 |
 | BSRAM | 16 / 46 | 18 / 46 |
 | DSP | 1.5 | 3.5 |
 | Global clock nets (PRIMARY) | 8 / 8 | 8 / 8, the same ones |
-| Setup slack at 108 MHz | 1.85 ns | 2.55 ns (1.2 ns or more in all the builds tried) |
+| Setup slack at 108 MHz | 1.76 ns | 2.46 ns (1.2 ns or more in all the builds tried) |
 | Setup / hold violations | 0 / 0 | 0 / 0 |
 
-At 91 % of the CLS it is full; [WONDERTANG.md](WONDERTANG.md#experimental-hdmi-and-msx-audio-together)
+At 91 % of the CLS it is full; [WONDERTANG.md](WONDERTANG.md#hdmi-and-msx-audio-together)
 says what that means for the SDRAM interface, which no `.sdc` constrains.
