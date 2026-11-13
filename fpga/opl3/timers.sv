@@ -121,7 +121,7 @@ module timers
     end
 
     // mangopl4: TICK_COUNT precomputado entero (Gowin trunca mal CLK_FREQ*TIMER_TICK_INTERVAL).
-    // Timer1: 80 µs, Timer2: 320 µs. Valores derivados en opl3_pkg.
+    // Timer1: 80,78 µs, Timer2: 323,1 µs (los del YMF278B, 1.0.6). Valores derivados en opl3_pkg.
     timer #(
         .TICK_COUNT(TIMER1_TICK_COUNT)
     ) timer1_inst (

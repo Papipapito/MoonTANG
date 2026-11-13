@@ -28,21 +28,22 @@
 > other equipment. Test in SRAM first, connect it with the MSX powered off, and
 > verify power and J3 before use.
 
-## 1.0.5: three WonderTANG versions / tres versiones WonderTANG
+## 1.0.6: three WonderTANG versions / tres versiones WonderTANG
 
 All three builds are for the **WonderTANG 2.02b only**.
 
 | Bitstream | English | Español |
 |---|---|---|
-| [`moontang_wondertang202b_hdmi_1.0.5.fs`](bitstream/moontang_wondertang202b_hdmi_1.0.5.fs) | **OPL4 + HDMI.** MoonSound, stereo HDMI audio/video and mono sound into the MSX through `SOUNDIN`. Use this when you already own a real MSX-Audio. | **OPL4 + HDMI.** MoonSound, vídeo y audio HDMI estéreo y sonido mono hacia el MSX por `SOUNDIN`. Úsala si ya tienes un MSX-Audio real. |
-| [`moontang_wondertang202b_hdmi_msxaudio_1.0.5.fs`](bitstream/moontang_wondertang202b_hdmi_msxaudio_1.0.5.fs) | **OPL4 + MSX-Audio + HDMI.** Everything together: MoonSound, Y8950 MSX-Audio and HDMI. It is the largest build (91 % CLS); test it in SRAM first. | **OPL4 + MSX-Audio + HDMI.** Todo junto: MoonSound, MSX-Audio Y8950 y HDMI. Es la versión más grande (91 % CLS); pruébala primero en SRAM. |
-| [`moontang_wondertang202b_msxaudio_1.0.5.fs`](bitstream/moontang_wondertang202b_msxaudio_1.0.5.fs) | **OPL4 + MSX-Audio, no HDMI.** MoonSound plus Y8950 MSX-Audio, with sound through the MSX. | **OPL4 + MSX-Audio, sin HDMI.** MoonSound más MSX-Audio Y8950, con sonido por el propio MSX. |
+| [`moontang_wondertang202b_hdmi_1.0.6.fs`](bitstream/moontang_wondertang202b_hdmi_1.0.6.fs) | **OPL4 + HDMI.** MoonSound, stereo HDMI audio/video and mono sound into the MSX through `SOUNDIN`. Use this when you already own a real MSX-Audio. | **OPL4 + HDMI.** MoonSound, vídeo y audio HDMI estéreo y sonido mono hacia el MSX por `SOUNDIN`. Úsala si ya tienes un MSX-Audio real. |
+| [`moontang_wondertang202b_hdmi_msxaudio_1.0.6.fs`](bitstream/moontang_wondertang202b_hdmi_msxaudio_1.0.6.fs) | **OPL4 + MSX-Audio + HDMI.** Everything together: MoonSound, Y8950 MSX-Audio and HDMI. It is the largest build (91 % CLS); test it in SRAM first. | **OPL4 + MSX-Audio + HDMI.** Todo junto: MoonSound, MSX-Audio Y8950 y HDMI. Es la versión más grande (91 % CLS); pruébala primero en SRAM. |
+| [`moontang_wondertang202b_msxaudio_1.0.6.fs`](bitstream/moontang_wondertang202b_msxaudio_1.0.6.fs) | **OPL4 + MSX-Audio, no HDMI.** MoonSound plus Y8950 MSX-Audio, with sound through the MSX. | **OPL4 + MSX-Audio, sin HDMI.** MoonSound más MSX-Audio Y8950, con sonido por el propio MSX. |
 
 ### Releases
 
 | Release | What it brings |
 |---|---|
-| **1.0.5** | The OPL4 wave envelope stops at −60 dB like the chip: reverb tails and fades fall silent where the YMF278B does, 30 dB earlier than before, and idle voices stop reading the wave memory from there. `DL=0` goes straight to the second decay. The wave LFO runs at the chip's exact rates (speed 7 was 2.5 % slow) and a speed change applies at once (before, up to 23 ms later). `F8h` sets the right FM side with its own bits (5:3; it used the left side's). |
+| **1.0.6** | The OPL4 wave is interpolated between samples, as the chip and openMSX do (the wave engine of the MSXimus Z Z1.2.12): on the engine bench a sine at a fractional pitch goes from 31 dB to 65 dB of signal‑to‑noise, and the stair‑steps of the held samples are gone. The FM timers tick at the YMF278B's periods, 80.78 µs and 323.1 µs (they were the 80 and 320 µs of a standalone OPL3: music clocked by the timer ran 1 % fast). The status register also answers on `C6h` (it read `FFh`; a program polling BUSY or LD there hung). New bench of the wave engine alone, `tools/sim/opl4eng/`. |
+| 1.0.5 | The OPL4 wave envelope stops at −60 dB like the chip: reverb tails and fades fall silent where the YMF278B does, 30 dB earlier than before, and idle voices stop reading the wave memory from there. `DL=0` goes straight to the second decay. The wave LFO runs at the chip's exact rates (speed 7 was 2.5 % slow) and a speed change applies at once (before, up to 23 ms later). `F8h` sets the right FM side with its own bits (5:3; it used the left side's). |
 | 1.0.4beta | The OPL4 wave engine implements DAMP and pseudo-reverb like the chip (note cuts in MoonBlaster Wave stop in 11 ms, reverb tails decay at the right rate); the 2.7 s burst of noise when loading songs in the *Dutch Moonsound Veterans HDD* demo is gone (an idle voice with TL=7Fh and tremolo wrapped to full scale; it affected 1.0.2beta and 1.0.3beta); register reads through `7Fh` no longer disturb the other voices; the LFO reset acts on its own voice; DL steps are 3 dB; NEW2 can be switched off; the memory access mode is silent as on the chip; the FM read-back follows the single address latch. |
 | 1.0.3beta | The OPL4 wave engine follows the chip: headroom for the 24 voices (dense music used to clip and wrap around), TL fades with `LD=0` reach their target without buzzing, envelope rates and attack as on the YMF278B (a note at a low rate in a low octave no longer dies in a few milliseconds), panning in −3 dB steps (it was −12 dB) and true silence below −90 dB (idle voices used to leave a small DC offset). The wave level per voice is unchanged. |
 | 1.0.2beta | The OPL4 takes NEW2 with the data on `C5h` as well as on `C7h`, as the chip does (`C7h` mirrors `C5h`): the disks that use the Moonsoft MoonBlaster Wave BASIC driver (Moonsound Music Collection 1, Musix Dizk 3) were silent. `F8h` resets to `1Bh` like the chip (FM at −9 dB per side; it used to start at `00h`). FM vibrato and tremolo as on the YMF262 (vibrato 6.05 Hz, ±12 cents; tremolo 4.9 dB at 3.7 Hz; before, a 217 Hz wobble and no tremolo). `MTVOL.COM` 1.0.2. |
@@ -83,17 +84,19 @@ nothing else.** No megaROM, no RAM expansion, no Nextor. If you want those, use
 ## Hardware testing / pruebas en placa
 
 **Español.** MoonTANG ha sonado en una WonderTANG 2.02b, en el slot interno de
-un MSXBOOK; la última vez, con la 1.0.4beta. La 1.0.5 es la 1.0.4beta con el
-motor wave de la Z1.2.10 de la MSXimus Z (probado en placa en la MSXimus Z) y el
-arreglo del lado derecho del `F8h`. Sus tres imágenes pasan la simulación de la placa completa y
-compilan sin violaciones de tiempo. Si pruebas una, abre una incidencia con el
+un MSXBOOK; la última vez, con la 1.0.4beta. La 1.0.6 es la 1.0.5 con el motor
+wave de la Z1.2.12 de la MSXimus Z (interpolación entre muestras; en placa en la
+MSXimus Z desde la Z1.2.13), los temporizadores del FM con los periodos del
+YMF278B y el estado también en `C6h`. Sus tres imágenes se compilan de este árbol
+con Gowin 1.9.12.03 (ver *Building*). Si pruebas una, abre una incidencia con el
 resultado, bueno o malo.
 
 **English.** MoonTANG has played on a WonderTANG 2.02b, in the internal slot of
-an MSXBOOK; most recently, 1.0.4beta. 1.0.5 is 1.0.4beta with the wave engine of
-the MSXimus Z Z1.2.10 (tested on hardware in the MSXimus Z) and the fix to the
-right side of `F8h`. Its three bitstreams pass the whole-board simulation and build without
-timing violations. Please open an issue with your results, good or bad.
+an MSXBOOK; most recently, 1.0.4beta. 1.0.6 is 1.0.5 with the wave engine of the
+MSXimus Z Z1.2.12 (interpolation between samples; on hardware in the MSXimus Z
+since Z1.2.13), the FM timers at the YMF278B's periods and the status on `C6h`
+too. Its three bitstreams are built from this tree with Gowin 1.9.12.03 (see
+*Building*). Please open an issue with your results, good or bad.
 
 ## Compatible hardware / hardware compatible
 
@@ -161,7 +164,12 @@ MoonTANG is a thin integration on top of excellent open work. See
   MoonSound cartridge wrapper we adapted.
 - **srg320** — the **YMF278B** PCM/wavetable engine (BSD‑3‑Clause), the first open RTL
   of the OPL4 wavetable, derived from **MAME**'s `ymf278b.cpp` by **R. Belmont,
-  Olivier Galibert and hap**.
+  Olivier Galibert and hap**; its sample interpolation (upstream, July 2026) came to
+  MoonTANG through the MSXimus Z1.2.12.
+- **rampa069 / BigMist** — the [**ZEMMIX**](https://github.com/BigMist/ZEMMIX) core,
+  built on the same two sound engines: its signed interpolation fix and its status
+  on `C6h` are in 1.0.6; comparing the two cores also confirmed the engine fixes of
+  1.0.3beta.
 - **José Tejada** (`jotego`) — [**JTOPL**](https://github.com/jotego/jtopl) (the Y8950
   FM) and the ADPCM‑B decoder of [**JT12**](https://github.com/jotego/jt12), both
   GPL‑3.0, in the MSX‑Audio bitstreams.

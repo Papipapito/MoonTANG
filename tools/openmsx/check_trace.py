@@ -144,10 +144,11 @@ def main(path):
                 if port == 0xC6:
                     keys.append('c6')
                     flag('c6', 'ALTA', 'Lee el estado por C6h',
-                         'openMSX: estado del chip (como en C4h). MoonTANG: siempre FFh '
-                         '(host_if.sv: solo la direccion 0 da el estado). Un bucle que '
-                         'espere BUSY=0 o LD=0 en C6h se cuelga; una deteccion que '
-                         'compare con FFh dice "no hay MoonSound".', lineno, pc)
+                         'openMSX: estado del chip (como en C4h). MoonTANG hasta la '
+                         '1.0.5: siempre FFh (host_if.sv solo daba el estado en la '
+                         'direccion 0; corregido en la 1.0.6). Con un bitstream anterior, '
+                         'un bucle que espere BUSY=0 o LD=0 en C6h se cuelga y una '
+                         'deteccion que compare con FFh dice "no hay MoonSound".', lineno, pc)
             elif port == 0x7E and out:
                 if new2:
                     wave_latch = val

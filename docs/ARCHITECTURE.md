@@ -54,9 +54,14 @@ The design is one **core** — the MoonSound itself — inside the WonderTANG sh
 | `src/vu_meter.v`, `vu_screen.v`, `font8x8.v`, `hdmi/*` | level meters, their screen, HDMI transmitter (all inside `moontang_av`) |
 
 The OPL4 files are the ones of the MSXimus (Zynq branch) and are kept in sync with
-it. MoonTANG's own differences are confined to parameters of `opl4_pcm.v`: the
-clock‑enable fraction of the PCM engine, the telemetry baud divisor, and the
-optional read mirror (`RD_MIRROR`, off by default).
+it: the wave engine is the Z1.2.12 one (linear interpolation between samples) and
+the FM timers tick at the YMF278B's periods, 80.78 and 323.1 µs (`opl3_pkg.sv`,
+2181 and 8724 cycles of 27 MHz). MoonTANG's own differences are confined to
+parameters of `opl4_pcm.v` — the clock‑enable fraction of the PCM engine, the
+telemetry baud divisor, and the optional read mirror (`RD_MIRROR`, off by
+default) — and, since 1.0.6, the status on `C6h` in `opl3/host_if.sv` (the chip
+and openMSX answer the status on every read with A0 = 0; the MSXimus still
+returns `FFh` there).
 
 The Y8950 files under `y8950/` are those of the MSXimus 60K (V3.8 branch), which
 are the same in every MSXimus core. JTOPL comes with the MSXimus change to it (the

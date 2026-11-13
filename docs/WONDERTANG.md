@@ -1,9 +1,9 @@
 # MoonTANG on the WonderTANG 2.02b
 
-MoonTANG has played on a WonderTANG 2.02b, most recently 1.0.4beta. The 1.0.5
-bitstreams in `bitstream/` pass the whole‑board simulation and build without
-timing violations; their OPL4 wave engine is the one of the MSXimus Z Z1.2.10,
-tested on hardware in the MSXimus Z. This is the bring‑up guide.
+MoonTANG has played on a WonderTANG 2.02b, most recently 1.0.4beta. The 1.0.6
+bitstreams in `bitstream/` are built from this tree with Gowin 1.9.12.03; their
+OPL4 wave engine is the one of the MSXimus Z Z1.2.12 (on hardware in the MSXimus Z
+since Z1.2.13). This is the bring‑up guide.
 
 ## What you need
 
@@ -23,9 +23,9 @@ tested on hardware in the MSXimus Z. This is the bring‑up guide.
 
 | Bitstream | What it does |
 |---|---|
-| `bitstream/moontang_wondertang202b_msxaudio_1.0.5.fs` | MoonSound **and MSX‑Audio**, without HDMI. Sound to the MSX only. |
-| `bitstream/moontang_wondertang202b_hdmi_1.0.5.fs` | MoonSound with HDMI: sound to the MSX **and**, at the same time, stereo sound and a VU meter on the Tang's HDMI connector. |
-| `bitstream/moontang_wondertang202b_hdmi_msxaudio_1.0.5.fs` | MoonSound, MSX‑Audio **and** HDMI together. It is the fullest build (91 % of the CLS). |
+| `bitstream/moontang_wondertang202b_msxaudio_1.0.6.fs` | MoonSound **and MSX‑Audio**, without HDMI. Sound to the MSX only. |
+| `bitstream/moontang_wondertang202b_hdmi_1.0.6.fs` | MoonSound with HDMI: sound to the MSX **and**, at the same time, stereo sound and a VU meter on the Tang's HDMI connector. |
+| `bitstream/moontang_wondertang202b_hdmi_msxaudio_1.0.6.fs` | MoonSound, MSX‑Audio **and** HDMI together. It is the fullest build (91 % of the CLS). |
 
 Which one:
 
@@ -174,7 +174,7 @@ in case a board prefers it.
 
 ## HDMI and MSX-Audio together
 
-`bitstream/moontang_wondertang202b_hdmi_msxaudio_1.0.5.fs` (built with
+`bitstream/moontang_wondertang202b_hdmi_msxaudio_1.0.6.fs` (built with
 `fpga/build_wt_hdmi_audio.tcl`) is the
 HDMI bitstream with the Y8950 of the MSX‑Audio bitstream switched on: everything both
 of them do, at the same time. The VU meter gets a seventh bar, **MSX‑AUDIO** (mono:
@@ -186,7 +186,9 @@ and 77 %). Gowin closes timing on every build tried: 0 setup and 0 hold violatio
 in 6 builds — 4 different placements, two of them routed twice, and two of the
 placements with the design slightly perturbed — with at least 1.2 ns of setup
 margin (hold: at least 0.074 ns, on BSRAM data inputs). The 1.0.5
-bitstream has 2.46 ns of setup margin on the 108 MHz clock. The board bench passes on it
+bitstream had 2.46 ns of setup margin on the 108 MHz clock; the 1.0.6 engine adds
+the interpolation (two 32 × 16 RAMs and one more multiplier in the wave engine):
+read the margin of its own build report. The board bench passes on it
 (`run_board.sh hdmi_audio`, see [VERIFICATION.md](VERIFICATION.md)). There is one risk
 timing analysis cannot see: the
 interface with the Tang Nano 20K's embedded SDRAM (`O_sdram_*`, `IO_sdram_dq`) is

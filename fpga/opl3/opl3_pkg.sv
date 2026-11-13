@@ -74,8 +74,13 @@ package opl3_pkg;
     // valor erróneo, lo que ralentiza Timer1 ~30x y rompe la base de
     // tiempo de VGMPlay-MSX (música reproduce muy lenta).
     // 33.5625e6 Hz * 80e-6 s = 2685 ; * 320e-6 = 10740
-    localparam int TIMER1_TICK_COUNT = 2160;  // 80us a 27MHz EXACTO
-    localparam int TIMER2_TICK_COUNT = 8640;  // 320us a 27MHz EXACTO
+    // MoonTANG 1.0.6 (= MSXimus Z1.2.12): the periods of the YMF278B's timers, not those
+    // of a standalone OPL3. The chip counts 2736 cycles of 33.8688 MHz per T1 tick
+    // (80.78 us) and 4 x 2736 per T2 tick (323.13 us; openMSX). At the 27 MHz of the FM
+    // core: 2736 x 27 / 33.8688 = 2181.1 -> 2181 (-0.005 %) and 8724.5 -> 8724
+    // (= 4 x 2181, -0.006 %). Only opl4fm uses this package; the Y8950 has jtopl_timers.
+    localparam int TIMER1_TICK_COUNT = 2181;  // 80.78 us at 27 MHz (was 2160 = 80 us)
+    localparam int TIMER2_TICK_COUNT = 8724;  // 323.1 us at 27 MHz (was 8640 = 320 us)
 
     typedef enum logic [2:0] {
         OP_NORMAL,

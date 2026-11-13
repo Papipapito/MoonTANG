@@ -10,7 +10,7 @@ intact.
 | **OPL3 FM core** | `fpga/opl3/*.sv` | **Greg Taylor** (`gtaylormb`, *OPL3 FPGA*); algorithm origins **R. Cozendey**, **S. Ohrendorf**, **Nuke.YKT**, carbon14/"opl3" | LGPL‑3.0‑or‑later |
 | OPL3 package (clock retune) | `fpga/opl3/opl3_pkg.sv` | Greg Taylor; mods **Jokin Miragaia** (`antxiko`, *mangOPL4*) | LGPL‑3.0 |
 | Async FIFO (FM host_if) | `fpga/opl3/afifo.v` | **Dan Gisselquist** (Gisselquist Technology) | GPL‑3.0 |
-| **PCM / wavetable engine** | `fpga/opl4wave/ymf278b_gowin.v` | **srg320** (*Arcade‑PsikyoSH2_MiSTer*), from **MAME** `ymf278b.cpp` (**R. Belmont, O. Galibert, hap**) | BSD‑3‑Clause (srg320 upstream header, see `THIRD_PARTY/NOTICE.md`) |
+| **PCM / wavetable engine** | `fpga/opl4wave/ymf278b_gowin.v` | **srg320** (*Arcade‑PsikyoSH2_MiSTer*), from **MAME** `ymf278b.cpp` (**R. Belmont, O. Galibert, hap**); the MSXimus Z (Z1.2.12) copy, with srg320's sample interpolation (upstream 5e8599e) rewritten as one signed product — the signed/unsigned click fix is **rampa069**'s (*BigMist/ZEMMIX*) | BSD‑3‑Clause (srg320 upstream header, see `THIRD_PARTY/NOTICE.md`) |
 | FM cartridge wrapper | `fpga/src/opl4fm.v` | derived from `cartridge_opl3.sv` of *mangOPL4* © 2026 **Jokin Miragaia** (`antxiko`); MSXimus/MoonTANG changes (shadow registers, status on `C4h`/`C6h`, `7Eh`/`7Fh` stub, 54 MHz bus) by Papipapito (Albert, with Claude) | BSD‑3‑Clause (original notice kept in the header, see `THIRD_PARTY/NOTICE.md`); changes GPL‑3.0 |
 | PCM glue | `fpga/src/opl4_pcm.v` | Papipapito (Albert, with Claude) | GPL‑3.0 |
 | Wave‑in‑SDRAM arbiter | `fpga/src/wave_sdram.v` | Papipapito (Albert, with Claude) | GPL‑3.0 |

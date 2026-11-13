@@ -5,7 +5,7 @@
 // parar y los flags y /INT volvian despues de cada ack y de cada /RESET.
 // Este banco para el timer exactamente en ese ciclo de varias maneras (00h, 78h,
 // /RESET, 40h con el timer en FF) y comprueba que el estado queda limpio, y que
-// los periodos normales no cambian (T1 = 80 us x n, T2 = 320 us x n).
+// los periodos normales no cambian (T1 = 80,78 us x n, T2 = 323,1 us x n; 1.0.6: los del YMF278B).
 // DUT: opl4fm.v (54/27 MHz) con el nucleo OPL3 de MoonTANG. Verilator.
 #include "verilated.h"
 #include "Vopl4fm.h"
@@ -73,7 +73,7 @@ static uint64_t first_ft1_after(uint8_t v) {
 int main(int argc, char **argv) {
     Verilated::commandArgs(argc, argv);
     const char *var = argc > 1 ? argv[1] : "?";
-    const unsigned TICK = 2160;
+    const unsigned TICK = 2181;
     d = new Vopl4fm;
     d->rst_n = 0; d->iorq_n = 1; d->rd_n = 1; d->wr_n = 1; d->m1_n = 1; d->addr = 0; d->din = 0; d->wave_status = 0;
     d->clk_host = 0; d->clk_opl3 = 0; d->eval();
@@ -93,23 +93,23 @@ int main(int argc, char **argv) {
     }
     printf("[R1] T1=F5 con ack 0BFh: periodos =");
     for (size_t i = 1; i < ft1_rise.size(); i++) printf(" %llu", (unsigned long long)(ft1_rise[i] - ft1_rise[i-1]));
-    printf("  (esperado 23760)\n");
-    { bool g = ft1_rise.size() >= 4; for (size_t i = 1; i < ft1_rise.size(); i++) g = g && (ft1_rise[i] - ft1_rise[i-1] == 23760);
-      ok(g, "timer 1 (F5h, ack BFh como VGMPlay): periodo de 23760 ciclos = 880 us"); }
+    printf("  (esperado 23991)\n");
+    { bool g = ft1_rise.size() >= 4; for (size_t i = 1; i < ft1_rise.size(); i++) g = g && (ft1_rise[i] - ft1_rise[i-1] == 23991);
+      ok(g, "timer 1 (F5h, ack BFh como VGMPlay): periodo de 23991 ciclos = 11 x 80,78 us"); }
     wr(4, 0x78); us(50);
     // R2: T2=FF, ack 80h
     sane(); wr(3, 0xFF); wr(4, 0x80); wr(4, 0x02);
     { std::vector<uint64_t> r; for (int i = 0; i < 4; i++) { uint64_t c0 = ocyc;
         while (!TM(ft2) && ocyc - c0 < 100000) step(); r.push_back(ocyc); us(5); wr(4, 0x80); }
-      printf("[R2] T2=FF ack 80h: periodos ="); for (size_t i = 1; i < r.size(); i++) printf(" %llu", (unsigned long long)(r[i]-r[i-1])); printf("  (esperado 8640)\n");
-      bool g = r.size() >= 3; for (size_t i = 1; i < r.size(); i++) g = g && (r[i] - r[i-1] == 8640);
-      ok(g, "timer 2 (FFh, ack 80h): periodo de 8640 ciclos = 320 us"); }
+      printf("[R2] T2=FF ack 80h: periodos ="); for (size_t i = 1; i < r.size(); i++) printf(" %llu", (unsigned long long)(r[i]-r[i-1])); printf("  (esperado 8724)\n");
+      bool g = r.size() >= 3; for (size_t i = 1; i < r.size(); i++) g = g && (r[i] - r[i-1] == 8724);
+      ok(g, "timer 2 (FFh, ack 80h): periodo de 8724 ciclos = 323,1 us"); }
     wr(4, 0x60); wr(4, 0x80); us(50);
     // R3: parada y rearranque normales
     sane(); wr(2, 0xF5); wr(4, 0x80); wr(4, 0x01); us(300); wr(4, 0x40); us(500);
     { uint64_t f = first_ft1_after(0x01);
-      printf("[R3] rearranque normal: primer FT1 a %llu ciclos del WR (esperado ~23760 + latencia)\n", (unsigned long long)f);
-      ok(f >= 23760 && f <= 23800, "parada y rearranque normales: el primer desbordamiento llega a su tiempo"); }
+      printf("[R3] rearranque normal: primer FT1 a %llu ciclos del WR (esperado ~23991 + latencia)\n", (unsigned long long)f);
+      ok(f >= 23991 && f <= 24030, "parada y rearranque normales: el primer desbordamiento llega a su tiempo"); }
     wr(4, 0x60); wr(4, 0x80); us(50);
 
     // F2: parada SIN mascara (00h) en el ciclo critico
@@ -146,8 +146,8 @@ int main(int argc, char **argv) {
     printf("[F5] 40h critico con timer=FF: tick=%d timer=%02X;", stop_tick, stop_tmr);
     us(500);
     { uint64_t f = first_ft1_after(0x01);
-      printf(" rearranque 01h: primer FT1 a %llu ciclos del WR (normal ~23760)\n", (unsigned long long)f);
-      ok(f >= 23760 && f <= 23800, "parada enmascarada (40h) con el timer en FF: el rearranque no da un desbordamiento espurio"); }
+      printf(" rearranque 01h: primer FT1 a %llu ciclos del WR (normal ~23991)\n", (unsigned long long)f);
+      ok(f >= 23991 && f <= 24030, "parada enmascarada (40h) con el timer en FF: el rearranque no da un desbordamiento espurio"); }
     wr(4, 0x60); wr(4, 0x80); us(50);
     // F6: parada SIN mascara (00h) en el ciclo critico con timer==FF
     sane(); wr(2, 0xF5); wr(4, 0x80); wr(4, 0x01); us(200); wr(4, 0x80);

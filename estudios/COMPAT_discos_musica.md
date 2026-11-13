@@ -1,5 +1,11 @@
 # Discos de música que fallan en MoonTANG: Moonsound Music Collection 1 (MiG) y Musix Dizk 3 (Surrec)
 
+> **Resuelto (14/10/2026, 1.0.2beta).** La causa era otra de las diferencias con el chip: el
+> driver BASIC de MoonBlaster Wave de Moonsoft pone NEW2 escribiendo el dato en `C5h` (el
+> chip espeja `C7h` en `C5h`) y MoonTANG solo lo tomaba por `C7h`: los dos discos quedaban
+> mudos. La #1 de la tabla (estado en `C6h`) se corrige en la 1.0.6. El resto sigue siendo
+> la lista de diferencias con openMSX que `tools/openmsx/check_trace.py` señala.
+
 Fecha: 11/10/2026. Base: `dc4b38d` (1.0.1 beta). Estado: **sin los discos todavía**. Los
 sitios donde están (download.file-hunter.com, msx.org, archive.org) no son accesibles desde
 la sesión en la nube donde se ha hecho esto. Lo que sigue es lo que se puede afirmar sin
@@ -33,7 +39,7 @@ marcado "verificado" lo está en el chip real según los comentarios de openMSX)
 
 | # | Acceso | openMSX | MoonTANG | Dónde | Riesgo |
 |---|---|---|---|---|---|
-| 1 | `IN C6h` | estado, igual que `C4h` | **FFh** siempre | `fpga/opl3/host_if.sv:132` (`address_p1 == 0`) | **alto** si el programa espera BUSY/LD o detecta por `C6h` |
+| 1 | `IN C6h` | estado, igual que `C4h` | **FFh** hasta la 1.0.5; el estado desde la **1.0.6** | `fpga/opl3/host_if.sv` | **alto** con un bitstream anterior si el programa espera BUSY/LD o detecta por `C6h` |
 | 2 | `IN 7Fh` (ID, registros wave, RAM de muestras) | inmediato | ida y vuelta al motor (~0,5 µs) sostenida por `/WAIT`, ~70 ns de margen a 3,58 MHz | `opl4_pcm.v:253,277`; `RD_MIRROR = 0` en la WonderTANG | **alto** en turbo R (R800) o MSX con turbo |
 | 3 | RAM de muestras | 640 kB por defecto (el MoonSound real: 128 kB–1 MB) | **2 MB planos** `200000h–3FFFFFh` | `wave_sdram.v`, `wv_to_sdram.v` | medio: detección de tamaño |
 | 4 | Primeros ~2 s tras configurar la FPGA | — | motor PCM en reset: escrituras wave perdidas (NEW2 incluido), `7Fh` caducado | `moontang_core.sv` (copia de la YRW801) | medio si el disco arranca solo |
@@ -49,7 +55,7 @@ marcado "verificado" lo está en el chip real según los comentarios de openMSX)
 | 14 | Timer 1 = FFh en marcha + 50 lecturas | normal | fuerza el desbordamiento (truco de detección de PC) | `trick_sw_detection.sv:81` | bajo-medio |
 | 15 | MSX-Audio | — | sin BIOS, sin `C2h–C3h`, sin DAC `0Ah` ni MIDI | `moontang_y8950.sv` | **alto** si el disco busca la BIOS |
 
-El propio `tools/msx/mt1det.asc` documenta la #1: espera `C4=00 C5=00 C6=FF C7=00`.
+Hasta la 1.0.5 `tools/msx/mt1det.asc` documentaba la #1: esperaba `C4=00 C5=00 C6=FF C7=00`; desde la 1.0.6 espera `C6=00`.
 
 ## Cómo saber cuál es
 
@@ -66,9 +72,8 @@ Con openMSX y el kit de [`tools/openmsx/`](../tools/openmsx/):
 
 Solo tienen sentido si el trazado lo confirma; los tres cambian el bitstream (Gowin).
 
-- **#1, estado en `C6h`.** `fpga/opl3/host_if.sv:132`:
-  `dout = address_p1[0] == 0 ? host_status_p1 : '1;`. Afecta también al MSXimus (el
-  fichero se comparte). Actualizar la línea 100 de `mt1det.asc` (`C6=00`).
+- **#1, estado en `C6h`.** Hecho en la 1.0.6 (`fpga/opl3/host_if.sv`). Pendiente de pasar
+  al MSXimus (el fichero se comparte; allí sigue dando FFh).
 - **#2, lecturas de `7Fh` en turbo.** Pasar `.WAVE_RD_MIRROR(1)` a `moontang_core` en
   `fpga/src/moontang_wt_shell.sv`: los registros 02h (ID) y 06h (RAM) se sirven desde el
   dominio del bus sin esperar al motor, como ya hace la placa SMD. El `/WAIT` se mantiene.

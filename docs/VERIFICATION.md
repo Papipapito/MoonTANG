@@ -5,9 +5,9 @@ not cover, so a failure on hardware can be narrowed down quickly.
 
 ## On hardware
 
-MoonTANG has played on a WonderTANG 2.02b, most recently 1.0.4beta. The 1.0.5
-wave engine is, byte for byte, the one of the MSXimus Z Z1.2.10, tested on
-hardware in the MSXimus Z. The MSX‑BASIC tests of [`tools/msx/`](../tools/msx/)
+MoonTANG has played on a WonderTANG 2.02b, most recently 1.0.4beta. The 1.0.6
+wave engine is, byte for byte, the one of the MSXimus Z Z1.2.12 (interpolation
+between samples), on hardware in the MSXimus Z since Z1.2.13. The MSX‑BASIC tests of [`tools/msx/`](../tools/msx/)
 were checked against openMSX.
 
 ## The board‑level benches
@@ -227,7 +227,8 @@ is not constrained).
 | Bench | Covers |
 |---|---|
 | `tools/sim/tb_loader_real.v` | the YRW801 loader against the real SPI flash reader, and its checksum (right and wrong expected sum) |
-| `tools/sim/opl3_timer/` | an OPL3 timer stopped in the exact cycle where its prescaler wraps, in five different ways: flags and `/INT` must clear, and the normal periods must not change. Negative control: the timer before the fix fails 5 of 9 (`run.sh negativo`) |
+| `tools/sim/opl3_timer/` | an OPL3 timer stopped in the exact cycle where its prescaler wraps, in five different ways: flags and `/INT` must clear, and the normal periods must not change — since 1.0.6 the YMF278B's: 2181 and 8724 cycles of 27 MHz (80.78 and 323.1 µs). Negative control: the timer before the fix fails 5 of 9 (`run.sh negativo`) |
+| `tools/sim/opl4eng/` (`run.sh`) | the wave engine alone (`ymf278b_gowin.v`, CE on every clock, a zero‑latency memory) against the YMF278B as openMSX models it, with a 16‑bit sine written into the sample RAM through registers 02h–06h and a header for tone 384 (WTH = 4), as a program does: pan of 3 dB per step (PAN 2 gives L/R = 0.50, PAN 1 0.75), the TL ramp towards the level written (up in ~850 samples, down in ~1700), the sustain DL × 3 dB below the peak, 12 slots saturating at ±32767 without wrapping, and the interpolation (T5, `interp_snr.py`): the sine at a fractional pitch has 65 dB of SNR and no step over 1.02 of the slope; the 1.0.5 engine, holding each sample, gives 31 dB and steps of 1.55 (an unsigned interpolation would click at every zero crossing: steps of 12 to 80). Pure Icarus, about four minutes |
 | `tools/sim/tb_i2s.v` | I2S channel order, bit alignment, and that samples are stable when the transmitter loads them |
 | `tools/sim/vu/tb_vu_meter.v` | level‑to‑segment conversion against a logarithmic reference, and the meter ballistics |
 | `tools/sim/vu/` | the VU screen: renders frames to PNG and counts lit segments |
