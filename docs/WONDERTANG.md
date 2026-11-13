@@ -25,7 +25,7 @@ since Z1.2.13). This is the bring‑up guide.
 |---|---|
 | `bitstream/moontang_wondertang202b_msxaudio_1.0.6.fs` | MoonSound **and MSX‑Audio**, without HDMI. Sound to the MSX only. |
 | `bitstream/moontang_wondertang202b_hdmi_1.0.6.fs` | MoonSound with HDMI: sound to the MSX **and**, at the same time, stereo sound and a VU meter on the Tang's HDMI connector. |
-| `bitstream/moontang_wondertang202b_hdmi_msxaudio_1.0.6.fs` | MoonSound, MSX‑Audio **and** HDMI together. It is the fullest build (91 % of the CLS). |
+| `bitstream/moontang_wondertang202b_hdmi_msxaudio_1.0.6.fs` | MoonSound, MSX‑Audio **and** HDMI together. It is the fullest build (92 % of the CLS). |
 
 Which one:
 
@@ -35,7 +35,7 @@ Which one:
   Toshiba HX‑MU900) is already plugged into another slot. The HDMI screen also
   shows that the wave ROM, MSX clock and audio path are alive.
 - **MSX‑Audio + HDMI** — the all-in-one build. It offers both chips and HDMI,
-  but uses 91 % of the FPGA CLS; load it in SRAM first.
+  but uses 92 % of the FPGA CLS; load it in SRAM first.
 
 For a first try you can load the `.fs` into **SRAM** instead (it is lost at power
 off): if something is wrong the board is back to its previous firmware after a
@@ -181,14 +181,14 @@ of them do, at the same time. The VU meter gets a seventh bar, **MSX‑AUDIO** (
 what the Y8950 adds to the mix), between WAVE and OUT. It is flashed like the others
 (the `.fs` at `0x000000`, the YRW801 at `0x200000`).
 
-It fills the chip: 69 % of the logic and 91 % of the CLS (the HDMI bitstream: 56 %
-and 77 %). Gowin closes timing on every build tried: 0 setup and 0 hold violations
+It fills the chip: 70 % of the logic and 92 % of the CLS (the HDMI bitstream: 57 %
+and 78 %). Gowin closes timing on every build tried: 0 setup and 0 hold violations
 in 6 builds — 4 different placements, two of them routed twice, and two of the
 placements with the design slightly perturbed — with at least 1.2 ns of setup
 margin (hold: at least 0.074 ns, on BSRAM data inputs). The 1.0.5
 bitstream had 2.46 ns of setup margin on the 108 MHz clock; the 1.0.6 engine adds
 the interpolation (two 32 × 16 RAMs and one more multiplier in the wave engine):
-read the margin of its own build report. The board bench passes on it
+its build closes with 1.91 ns on that clock and 4.06 ns on the engine clock. The board bench passes on it
 (`run_board.sh hdmi_audio`, see [VERIFICATION.md](VERIFICATION.md)). There is one risk
 timing analysis cannot see: the
 interface with the Tang Nano 20K's embedded SDRAM (`O_sdram_*`, `IO_sdram_dq`) is
